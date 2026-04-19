@@ -7,6 +7,7 @@ from cart import click_carrello
 from dashboard import mostra_dashboard
 from export import esporta_excel
 from history import mostra_storico
+from import_products import importa_excel
 from products import aggiorna_tabella, cerca_barcode, cerca_prodotto, seleziona_prodotto
 from sales import chiudi_scontrino
 
@@ -84,6 +85,9 @@ tk.Button(frame_bottoni, text="Mișcări Istorice", width=18, command=mostra_sto
 
 tk.Button(frame_bottoni, text="Dashboard", width=18, command=mostra_dashboard)\
     .grid(row=1, column=1, padx=5, pady=5)
+
+tk.Button(frame_bottoni, text="Importă Excel", width=18, command=importa_excel)\
+    .grid(row=2, column=0, padx=5, pady=5)
 
 frame_ricerca = tk.Frame(root)
 frame_ricerca.pack(pady=5)

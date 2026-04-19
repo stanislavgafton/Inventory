@@ -15,7 +15,7 @@ from sales import chiudi_scontrino
 state.conn = db.conn
 state.cursor = db.cursor
 
-root = ttkb.Window(themename="superhero")
+root = ttkb.Window(themename="cosmo")
 root.title("GASTA")
 root.geometry("1600x900")
 root.bind("<Return>", cerca_barcode)
@@ -74,8 +74,8 @@ cart_canvas.bind("<Leave>", lambda e: cart_canvas.unbind_all("<MouseWheel>"))
 
 state.cart_frame = cart_frame
 
-ttkb.Label(root, textvariable=state.totale_var, font=("Segoe UI", 18, "bold"),
-           bootstyle="success").pack(pady=8)
+ttkb.Label(root, textvariable=state.totale_var,
+           font=("Segoe UI", 18, "bold")).pack(pady=8)
 state.totale_var.set("Total: 0.00 lei")
 
 # Hidden entries (preserved from original — some code paths touch them)
@@ -101,11 +101,11 @@ frame_bottoni.pack(pady=10)
 btn_opts = dict(width=20, padding=8)
 
 ttkb.Button(frame_bottoni, text="Eliberează Bonul", command=chiudi_scontrino,
-            bootstyle="success", **btn_opts).grid(row=0, column=0, padx=6, pady=6)
+            bootstyle="primary", **btn_opts).grid(row=0, column=0, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Exportă Excel", command=esporta_excel,
-            bootstyle="info", **btn_opts).grid(row=0, column=1, padx=6, pady=6)
+            bootstyle="secondary", **btn_opts).grid(row=0, column=1, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Importă Excel", command=importa_excel,
-            bootstyle="info-outline", **btn_opts).grid(row=0, column=2, padx=6, pady=6)
+            bootstyle="secondary", **btn_opts).grid(row=0, column=2, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Mișcări Istorice", command=mostra_storico,
             bootstyle="secondary", **btn_opts).grid(row=1, column=0, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Dashboard", command=mostra_dashboard,
@@ -128,8 +128,8 @@ frame_tree.pack(fill="both", expand=True)
 
 tree = ttkb.Treeview(frame_tree, columns=("ID", "Denumire", "Cantitate", "Preț", "Barcode"),
                      show="headings", bootstyle="primary")
-tree.tag_configure("basso", background="#f8d7da")
-tree.tag_configure("medio", background="#fff3cd")
+tree.tag_configure("basso", background="#fdecea", foreground="#b02a37")
+tree.tag_configure("medio", background="#fff4d6", foreground="#8a6d1a")
 
 tree.heading("ID", text="ID")
 tree.heading("Denumire", text="Denumire")

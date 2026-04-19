@@ -41,12 +41,12 @@ def mostra_storico():
 
     tree_mov.pack(fill="both", expand=True, padx=12, pady=(0, 12))
 
-    tree_mov.tag_configure("carico", background="#d1e7dd")
-    tree_mov.tag_configure("încarcare", background="#d1e7dd")
-    tree_mov.tag_configure("scarico", background="#f8d7da")
-    tree_mov.tag_configure("descărcare", background="#f8d7da")
-    tree_mov.tag_configure("vendita", background="#cfe2ff")
-    tree_mov.tag_configure("vanzare", background="#cfe2ff")
+    tree_mov.tag_configure("carico", background="#e6f4ea", foreground="#1e7a3c")
+    tree_mov.tag_configure("încarcare", background="#e6f4ea", foreground="#1e7a3c")
+    tree_mov.tag_configure("scarico", background="#fdecea", foreground="#b02a37")
+    tree_mov.tag_configure("descărcare", background="#fdecea", foreground="#b02a37")
+    tree_mov.tag_configure("vendita", background="#eaf2fc", foreground="#1c5fa0")
+    tree_mov.tag_configure("vanzare", background="#eaf2fc", foreground="#1c5fa0")
 
     def carica_dati():
         for row in tree_mov.get_children():
@@ -97,5 +97,5 @@ def mostra_storico():
         messagebox.showinfo("OK", "Mișcări exportate!")
 
     ttkb.Button(frame_filtri, text="Exportă Excel", command=esporta_storico,
-                bootstyle="info", padding=6).grid(row=0, column=3, padx=6, pady=4)
+                bootstyle="secondary", padding=6).grid(row=0, column=3, padx=6, pady=4)
     carica_dati()

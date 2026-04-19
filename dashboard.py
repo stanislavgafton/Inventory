@@ -17,7 +17,7 @@ def mostra_dashboard():
     totale = state.cursor.fetchone()[0] or 0
 
     ttkb.Label(wrap, text=f"Total vânzări: {totale:.2f} lei",
-               font=("Segoe UI", 18, "bold"), bootstyle="success").pack(pady=10)
+               font=("Segoe UI", 18, "bold"), bootstyle="primary").pack(pady=10)
 
     frame_grafici = ttkb.Frame(wrap)
     frame_grafici.columnconfigure(0, weight=1)
@@ -33,16 +33,20 @@ def mostra_dashboard():
     """)
     dati = state.cursor.fetchall()
 
-    fig1 = plt.Figure(figsize=(4, 4), facecolor="#f8f9fa")
-    ax1 = fig1.add_subplot(111)
+    fig1 = plt.Figure(figsize=(4, 4), facecolor="#ffffff")
+    ax1 = fig1.add_subplot(111, facecolor="#ffffff")
+    for spine in ax1.spines.values():
+        spine.set_color("#dee2e6")
+    ax1.tick_params(colors="#495057")
+    ax1.title.set_color("#495057")
 
     if dati:
         date = [row[0] for row in dati]
         valori = [row[1] for row in dati]
-        ax1.plot(date, valori, marker="o", color="#0d6efd", linewidth=2)
+        ax1.plot(date, valori, marker="o", color="#2780e3", linewidth=2)
         ax1.set_title("Vânzări per zi")
-        ax1.tick_params(axis='x', rotation=45)
-        ax1.grid(True, alpha=0.3)
+        ax1.tick_params(axis='x', rotation=45, colors="#495057")
+        ax1.grid(True, alpha=0.2, color="#495057")
 
     canvas1 = FigureCanvasTkAgg(fig1, master=frame_grafici)
     canvas1.draw()
@@ -58,16 +62,20 @@ def mostra_dashboard():
     """)
     top = state.cursor.fetchall()
 
-    fig2 = plt.Figure(figsize=(4, 4), facecolor="#f8f9fa")
-    ax2 = fig2.add_subplot(111)
+    fig2 = plt.Figure(figsize=(4, 4), facecolor="#ffffff")
+    ax2 = fig2.add_subplot(111, facecolor="#ffffff")
+    for spine in ax2.spines.values():
+        spine.set_color("#dee2e6")
+    ax2.tick_params(colors="#495057")
+    ax2.title.set_color("#495057")
 
     if top:
         nomi = [row[0] for row in top]
         quantita = [row[1] for row in top]
-        ax2.bar(nomi, quantita, color="#198754")
+        ax2.bar(nomi, quantita, color="#2780e3")
         ax2.set_title("Top 5 produse vândute")
-        ax2.tick_params(axis='x', rotation=45)
-        ax2.grid(True, axis="y", alpha=0.3)
+        ax2.tick_params(axis='x', rotation=45, colors="#495057")
+        ax2.grid(True, axis="y", alpha=0.2, color="#495057")
 
     canvas2 = FigureCanvasTkAgg(fig2, master=frame_grafici)
     canvas2.draw()

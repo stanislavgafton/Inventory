@@ -51,37 +51,36 @@ def aggiorna_carrello_ui():
 
 
 def _build_card(parent, idx, nome, prezzo, q):
-    card = ttkb.Frame(parent, padding=10, bootstyle="light")
-    card.pack(fill="x", pady=4, padx=2)
+    card = ttkb.Frame(parent, padding=12)
+    card.pack(fill="x", pady=3, padx=2)
 
-    # Left: product name + unit price
-    left = ttkb.Frame(card, bootstyle="light")
+    left = ttkb.Frame(card)
     left.pack(side="left", fill="x", expand=True)
 
-    ttkb.Label(left, text=nome, font=("Segoe UI", 11, "bold"),
-               bootstyle="inverse-light").pack(anchor="w")
+    ttkb.Label(left, text=nome, font=("Segoe UI", 11, "bold")).pack(anchor="w")
     ttkb.Label(left, text=f"{prezzo:.2f} lei / buc",
-               font=("Segoe UI", 9), bootstyle="secondary").pack(anchor="w")
+               font=("Segoe UI", 9)).pack(anchor="w")
 
-    # Right: qty controls + line total + delete
-    right = ttkb.Frame(card, bootstyle="light")
+    right = ttkb.Frame(card)
     right.pack(side="right")
 
-    ttkb.Button(right, text="−", width=2, bootstyle="outline-secondary",
+    ttkb.Button(right, text="−", width=2, bootstyle="secondary",
                 command=lambda: modifica_qta(idx, -1)).pack(side="left", padx=2)
 
     ttkb.Label(right, text=str(q), width=3, anchor="center",
-               font=("Segoe UI", 11, "bold")).pack(side="left", padx=4)
+               font=("Segoe UI", 12, "bold")).pack(side="left", padx=4)
 
-    ttkb.Button(right, text="+", width=2, bootstyle="outline-secondary",
+    ttkb.Button(right, text="+", width=2, bootstyle="secondary",
                 command=lambda: modifica_qta(idx, +1)).pack(side="left", padx=2)
 
     ttkb.Label(right, text=f"{prezzo * q:.2f} lei",
-               font=("Segoe UI", 11, "bold"), bootstyle="success",
+               font=("Segoe UI", 11, "bold"),
                width=12, anchor="e").pack(side="left", padx=10)
 
-    ttkb.Button(right, text="🗑", width=2, bootstyle="danger-outline",
+    ttkb.Button(right, text="🗑", width=2, bootstyle="danger",
                 command=lambda: rimuovi(idx)).pack(side="left", padx=2)
+
+    ttkb.Separator(parent, orient="horizontal").pack(fill="x", padx=2)
 
 
 def modifica_qta(index, delta):

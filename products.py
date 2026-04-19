@@ -1,4 +1,5 @@
 import datetime
+import os
 import tkinter as tk
 import winsound
 from tkinter import messagebox
@@ -7,6 +8,14 @@ import ttkbootstrap as ttkb
 
 import cart
 import state
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_BEEP_OK = os.path.join(_HERE, "beep_ok.wav")
+_BEEP_ERR = os.path.join(_HERE, "beep_err.wav")
+
+
+def _play(path):
+    winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
 
 
 def aggiorna_tabella():
@@ -86,10 +95,10 @@ def cerca_barcode(event=None):
     risultato = state.cursor.fetchone()
 
     if risultato:
-        winsound.Beep(1000, 150)
+        _play(_BEEP_OK)
         preview_prodotto(risultato)
     else:
-        winsound.Beep(300, 300)
+        _play(_BEEP_ERR)
         risposta = messagebox.askyesno("Nou Produs", "Produs nu a fost găsit. Vreai să îl adaugi?")
         if risposta:
             popup_nuovo_prodotto(codice)
@@ -156,7 +165,7 @@ def popup_nuovo_prodotto(barcode):
     entry_nome_popup.bind("<Return>", lambda e: entry_q_popup.focus_set())
     entry_q_popup.bind("<Return>", lambda e: entry_prezzo_popup.focus_set())
     entry_prezzo_popup.bind("<Return>", salva)
-    ttkb.Button(wrap, text="Salvează", command=salva, bootstyle="success",
+    ttkb.Button(wrap, text="Salvează", command=salva, bootstyle="primary",
                 padding=8).pack(pady=14, fill="x")
     popup.after(100, lambda: entry_nome_popup.focus_set())
 
@@ -177,7 +186,7 @@ def preview_prodotto(prodotto):
     ttkb.Label(wrap, text=f"Disponibil: {quantita}",
                font=("Segoe UI", 11)).pack()
     ttkb.Label(wrap, text=f"Preț: {prezzo} lei",
-               font=("Segoe UI", 11), bootstyle="success").pack(pady=(0, 12))
+               font=("Segoe UI", 11)).pack(pady=(0, 12))
 
     qty_var = tk.IntVar(value=1)
 
@@ -192,14 +201,14 @@ def preview_prodotto(prodotto):
         qty_var.set(qty_var.get() + 1)
 
     ttkb.Button(frame_qty, text="−", width=3, command=meno,
-                bootstyle="outline-secondary").pack(side=tk.LEFT, padx=4)
+                bootstyle="secondary").pack(side=tk.LEFT, padx=4)
 
     entry_qty = ttkb.Entry(frame_qty, textvariable=qty_var, width=6, justify="center",
                            font=("Segoe UI", 12, "bold"))
     entry_qty.pack(side=tk.LEFT, padx=4)
 
     ttkb.Button(frame_qty, text="+", width=3, command=piu,
-                bootstyle="outline-secondary").pack(side=tk.LEFT, padx=4)
+                bootstyle="secondary").pack(side=tk.LEFT, padx=4)
 
     def aggiungi_carrello(event=None):
         q = qty_var.get()
@@ -268,11 +277,11 @@ def preview_prodotto(prodotto):
         riattiva_barcode()
 
     ttkb.Button(wrap, text="Adaugă în coș", command=aggiungi_carrello,
-                bootstyle="success", padding=8).pack(pady=(16, 6), fill="x")
+                bootstyle="primary", padding=8).pack(pady=(16, 6), fill="x")
     ttkb.Button(wrap, text="Adaugă în inventar", command=aggiungi_stock,
-                bootstyle="primary", padding=8).pack(pady=4, fill="x")
+                bootstyle="secondary", padding=8).pack(pady=4, fill="x")
     ttkb.Button(wrap, text="Elimină în inventar", command=rimuovi_stock,
-                bootstyle="danger-outline", padding=8).pack(pady=4, fill="x")
+                bootstyle="danger", padding=8).pack(pady=4, fill="x")
 
     def riattiva_barcode():
         state.root.bind("<Return>", cerca_barcode)

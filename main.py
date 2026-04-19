@@ -1,9 +1,10 @@
 import tkinter as tk
-from tkinter import ttk
+
+import ttkbootstrap as ttkb
+from ttkbootstrap.constants import LEFT, X
 
 import db
 import state
-from cart import click_carrello
 from dashboard import mostra_dashboard
 from export import esporta_excel
 from history import mostra_storico
@@ -14,9 +15,9 @@ from sales import chiudi_scontrino
 state.conn = db.conn
 state.cursor = db.cursor
 
-root = tk.Tk()
+root = ttkb.Window(themename="superhero")
 root.title("GASTA")
-root.geometry("1600x800")
+root.geometry("1600x900")
 root.bind("<Return>", cerca_barcode)
 root.bind("<KP_Enter>", cerca_barcode)
 
@@ -25,84 +26,110 @@ state.carrello = []
 state.totale_var = tk.StringVar()
 state.totale_var.set("Total: 0.00 lei")
 
-frame_nome = tk.Frame(root)
-frame_quantita = tk.Frame(root)
-frame_prezzo = tk.Frame(root)
-frame_barcode = tk.Frame(root)
-frame_nome.pack_forget()
-frame_quantita.pack_forget()
-frame_prezzo.pack_forget()
-frame_barcode.pack(pady=10)
+# Hidden frames kept for compatibility with code that writes to entry_nome/quantita/prezzo
+frame_nome = ttkb.Frame(root)
+frame_quantita = ttkb.Frame(root)
+frame_prezzo = ttkb.Frame(root)
 
-tk.Label(root, text="Coș").pack()
+# Barcode input — top of window
+frame_barcode = ttkb.Frame(root, padding=12)
+frame_barcode.pack(pady=(10, 4))
 
-tree_carrello = ttk.Treeview(root, columns=("Denumire", "Cantitate", "Total", "Actiuni"), show="headings")
-tree_carrello.heading("Denumire", text="Denumire")
-tree_carrello.heading("Cantitate", text="Cantitate")
-tree_carrello.heading("Total", text="Total")
-tree_carrello.heading("Actiuni", text="Actiuni")
-tree_carrello.bind("<Button-1>", click_carrello)
-tree_carrello.pack()
-state.tree_carrello = tree_carrello
-
-frame_carrello_btn = tk.Frame(root)
-frame_carrello_btn.pack(pady=5)
-
-tk.Label(root, textvariable=state.totale_var, font=("Arial", 14)).pack()
-state.totale_var.set("Total: 0.00 lei")
-
-tk.Label(frame_nome, text="Denumire").pack(side=tk.LEFT)
-entry_nome = tk.Entry(frame_nome)
-entry_nome.pack(side=tk.LEFT)
-state.entry_nome = entry_nome
-
-tk.Label(frame_quantita, text="Cantitate").pack(side=tk.LEFT)
-entry_quantita = tk.Entry(frame_quantita)
-entry_quantita.pack(side=tk.LEFT)
-state.entry_quantita = entry_quantita
-
-tk.Label(frame_prezzo, text="Preț").pack(side=tk.LEFT)
-entry_prezzo = tk.Entry(frame_prezzo)
-entry_prezzo.pack(side=tk.LEFT)
-state.entry_prezzo = entry_prezzo
-
-tk.Label(frame_barcode, text="Barcode").pack(side=tk.LEFT)
-entry_barcode = tk.Entry(frame_barcode)
-entry_barcode.pack(side=tk.LEFT)
+ttkb.Label(frame_barcode, text="Barcode", font=("Segoe UI", 11, "bold")).pack(side=LEFT, padx=(0, 8))
+entry_barcode = ttkb.Entry(frame_barcode, width=30, font=("Segoe UI", 11))
+entry_barcode.pack(side=LEFT)
 state.entry_barcode = entry_barcode
 
-frame_bottoni = tk.Frame(root)
+# Cart section — scrollable list of cards
+ttkb.Label(root, text="Coș", font=("Segoe UI", 13, "bold")).pack(pady=(10, 4))
+
+frame_cart_outer = ttkb.Frame(root, padding=(16, 0))
+frame_cart_outer.pack(fill=X)
+
+cart_canvas = tk.Canvas(frame_cart_outer, height=260, highlightthickness=0,
+                        bg=root.style.colors.bg)
+cart_scrollbar = ttkb.Scrollbar(frame_cart_outer, orient="vertical",
+                                command=cart_canvas.yview, bootstyle="round")
+cart_canvas.configure(yscrollcommand=cart_scrollbar.set)
+
+cart_scrollbar.pack(side="right", fill="y")
+cart_canvas.pack(side="left", fill="both", expand=True)
+
+cart_frame = ttkb.Frame(cart_canvas)
+cart_window = cart_canvas.create_window((0, 0), window=cart_frame, anchor="nw")
+
+def _on_cart_configure(_e=None):
+    cart_canvas.configure(scrollregion=cart_canvas.bbox("all"))
+
+def _on_canvas_configure(event):
+    cart_canvas.itemconfigure(cart_window, width=event.width)
+
+cart_frame.bind("<Configure>", _on_cart_configure)
+cart_canvas.bind("<Configure>", _on_canvas_configure)
+
+def _on_mousewheel(event):
+    cart_canvas.yview_scroll(int(-event.delta / 120), "units")
+cart_canvas.bind("<Enter>", lambda e: cart_canvas.bind_all("<MouseWheel>", _on_mousewheel))
+cart_canvas.bind("<Leave>", lambda e: cart_canvas.unbind_all("<MouseWheel>"))
+
+state.cart_frame = cart_frame
+
+ttkb.Label(root, textvariable=state.totale_var, font=("Segoe UI", 18, "bold"),
+           bootstyle="success").pack(pady=8)
+state.totale_var.set("Total: 0.00 lei")
+
+# Hidden entries (preserved from original — some code paths touch them)
+ttkb.Label(frame_nome, text="Denumire").pack(side=LEFT)
+entry_nome = ttkb.Entry(frame_nome)
+entry_nome.pack(side=LEFT)
+state.entry_nome = entry_nome
+
+ttkb.Label(frame_quantita, text="Cantitate").pack(side=LEFT)
+entry_quantita = ttkb.Entry(frame_quantita)
+entry_quantita.pack(side=LEFT)
+state.entry_quantita = entry_quantita
+
+ttkb.Label(frame_prezzo, text="Preț").pack(side=LEFT)
+entry_prezzo = ttkb.Entry(frame_prezzo)
+entry_prezzo.pack(side=LEFT)
+state.entry_prezzo = entry_prezzo
+
+# Action buttons
+frame_bottoni = ttkb.Frame(root, padding=10)
 frame_bottoni.pack(pady=10)
 
-tk.Button(frame_bottoni, text="Eliberează Bonul", width=18, command=chiudi_scontrino)\
-    .grid(row=0, column=0, padx=5, pady=5)
+btn_opts = dict(width=20, padding=8)
 
-tk.Button(frame_bottoni, text="Exportă Excel", width=18, command=esporta_excel)\
-    .grid(row=0, column=1, padx=5, pady=5)
+ttkb.Button(frame_bottoni, text="Eliberează Bonul", command=chiudi_scontrino,
+            bootstyle="success", **btn_opts).grid(row=0, column=0, padx=6, pady=6)
+ttkb.Button(frame_bottoni, text="Exportă Excel", command=esporta_excel,
+            bootstyle="info", **btn_opts).grid(row=0, column=1, padx=6, pady=6)
+ttkb.Button(frame_bottoni, text="Importă Excel", command=importa_excel,
+            bootstyle="info-outline", **btn_opts).grid(row=0, column=2, padx=6, pady=6)
+ttkb.Button(frame_bottoni, text="Mișcări Istorice", command=mostra_storico,
+            bootstyle="secondary", **btn_opts).grid(row=1, column=0, padx=6, pady=6)
+ttkb.Button(frame_bottoni, text="Dashboard", command=mostra_dashboard,
+            bootstyle="secondary", **btn_opts).grid(row=1, column=1, padx=6, pady=6)
 
-tk.Button(frame_bottoni, text="Mișcări Istorice", width=18, command=mostra_storico)\
-    .grid(row=1, column=0, padx=5, pady=5)
+# Search bar
+frame_ricerca = ttkb.Frame(root, padding=(10, 4))
+frame_ricerca.pack(pady=6)
 
-tk.Button(frame_bottoni, text="Dashboard", width=18, command=mostra_dashboard)\
-    .grid(row=1, column=1, padx=5, pady=5)
-
-tk.Button(frame_bottoni, text="Importă Excel", width=18, command=importa_excel)\
-    .grid(row=2, column=0, padx=5, pady=5)
-
-frame_ricerca = tk.Frame(root)
-frame_ricerca.pack(pady=5)
-
-tk.Label(frame_ricerca, text="Caută").pack(side=tk.LEFT)
-entry_ricerca = tk.Entry(frame_ricerca)
-entry_ricerca.pack(side=tk.LEFT)
+ttkb.Label(frame_ricerca, text="Caută", font=("Segoe UI", 10)).pack(side=LEFT, padx=(0, 8))
+entry_ricerca = ttkb.Entry(frame_ricerca, width=40)
+entry_ricerca.pack(side=LEFT, padx=(0, 8))
 state.entry_ricerca = entry_ricerca
+ttkb.Button(frame_ricerca, text="OK", command=cerca_prodotto, bootstyle="primary",
+            width=8).pack(side=LEFT)
 
-tk.Button(frame_ricerca, text="OK", command=cerca_prodotto).pack(side=tk.LEFT)
+# Product table
+frame_tree = ttkb.Frame(root, padding=(16, 6))
+frame_tree.pack(fill="both", expand=True)
 
-tree = ttk.Treeview(root, columns=("ID", "Denumire", "Cantitate", "Preț", "Barcode"), show="headings")
-tree.tag_configure("basso", background="#ffcccc")
-tree.tag_configure("basso", background="#ffcccc")
-tree.tag_configure("medio", background="#fff2cc")
+tree = ttkb.Treeview(frame_tree, columns=("ID", "Denumire", "Cantitate", "Preț", "Barcode"),
+                     show="headings", bootstyle="primary")
+tree.tag_configure("basso", background="#f8d7da")
+tree.tag_configure("medio", background="#fff3cd")
 
 tree.heading("ID", text="ID")
 tree.heading("Denumire", text="Denumire")
@@ -110,8 +137,12 @@ tree.heading("Cantitate", text="Cantitate")
 tree.heading("Preț", text="Preț")
 tree.heading("Barcode", text="Barcode")
 
-tree.pack(fill="both", expand=True)
+tree.column("ID", width=60, anchor="center")
+tree.column("Cantitate", anchor="center", width=110)
+tree.column("Preț", anchor="e", width=110)
+tree.column("Barcode", anchor="center", width=180)
 
+tree.pack(fill="both", expand=True)
 tree.bind("<ButtonRelease-1>", seleziona_prodotto)
 state.tree = tree
 

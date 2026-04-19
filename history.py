@@ -1,5 +1,7 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, messagebox
+
+import ttkbootstrap as ttkb
 
 from openpyxl import Workbook
 
@@ -7,35 +9,44 @@ import state
 
 
 def mostra_storico():
-    win = tk.Toplevel()
+    win = ttkb.Toplevel()
     win.title("Mișcări Istorice")
-    win.geometry("1000x400")
+    win.geometry("1100x500")
 
-    frame_filtri = tk.Frame(win)
-    frame_filtri.pack(pady=5)
+    frame_filtri = ttkb.Frame(win, padding=12)
+    frame_filtri.pack(fill="x")
 
-    tk.Label(frame_filtri, text="Cauta Produs").grid(row=0, column=0)
-    entry_search = tk.Entry(frame_filtri)
-    entry_search.grid(row=0, column=1)
+    ttkb.Label(frame_filtri, text="Caută produs").grid(row=0, column=0, sticky="w", padx=4, pady=4)
+    entry_search = ttkb.Entry(frame_filtri, width=25)
+    entry_search.grid(row=0, column=1, padx=4, pady=4)
 
-    tk.Label(frame_filtri, text="De pe (YYYY-MM-DD)").grid(row=1, column=0)
-    entry_da = tk.Entry(frame_filtri)
-    entry_da.grid(row=1, column=1)
+    ttkb.Label(frame_filtri, text="De pe (YYYY-MM-DD)").grid(row=1, column=0, sticky="w", padx=4, pady=4)
+    entry_da = ttkb.Entry(frame_filtri, width=18)
+    entry_da.grid(row=1, column=1, padx=4, pady=4)
 
-    tk.Label(frame_filtri, text="Pana pe (YYYY-MM-DD)").grid(row=1, column=2)
-    entry_a = tk.Entry(frame_filtri)
-    entry_a.grid(row=1, column=3)
+    ttkb.Label(frame_filtri, text="Până pe (YYYY-MM-DD)").grid(row=1, column=2, sticky="w", padx=4, pady=4)
+    entry_a = ttkb.Entry(frame_filtri, width=18)
+    entry_a.grid(row=1, column=3, padx=4, pady=4)
 
-    tree_mov = ttk.Treeview(win, columns=("ID", "Denumire", "Tip", "Cantitate", "Data"), show="headings")
+    tree_mov = ttkb.Treeview(win, columns=("ID", "Denumire", "Tip", "Cantitate", "Data"),
+                             show="headings", bootstyle="primary")
 
     for col in ("ID", "Denumire", "Tip", "Cantitate", "Data"):
         tree_mov.heading(col, text=col)
 
-    tree_mov.pack(fill="both", expand=True)
+    tree_mov.column("ID", width=60, anchor="center")
+    tree_mov.column("Cantitate", anchor="center", width=110)
+    tree_mov.column("Tip", anchor="center", width=130)
+    tree_mov.column("Data", anchor="center", width=180)
 
-    tree_mov.tag_configure("carico", background="#ccffcc")
-    tree_mov.tag_configure("scarico", background="#ffcccc")
-    tree_mov.tag_configure("vendita", background="#cce5ff")
+    tree_mov.pack(fill="both", expand=True, padx=12, pady=(0, 12))
+
+    tree_mov.tag_configure("carico", background="#d1e7dd")
+    tree_mov.tag_configure("încarcare", background="#d1e7dd")
+    tree_mov.tag_configure("scarico", background="#f8d7da")
+    tree_mov.tag_configure("descărcare", background="#f8d7da")
+    tree_mov.tag_configure("vendita", background="#cfe2ff")
+    tree_mov.tag_configure("vanzare", background="#cfe2ff")
 
     def carica_dati():
         for row in tree_mov.get_children():
@@ -63,7 +74,8 @@ def mostra_storico():
         for row in state.cursor.fetchall():
             tree_mov.insert("", tk.END, values=row, tags=(row[2],))
 
-    tk.Button(frame_filtri, text="Filtra", command=carica_dati).grid(row=0, column=2, padx=5)
+    ttkb.Button(frame_filtri, text="Filtrează", command=carica_dati,
+                bootstyle="primary", padding=6).grid(row=0, column=2, padx=6, pady=4)
 
     def esporta_storico():
         file_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
@@ -84,5 +96,6 @@ def mostra_storico():
 
         messagebox.showinfo("OK", "Mișcări exportate!")
 
-    tk.Button(frame_filtri, text="Exportă Excel", command=esporta_storico).grid(row=0, column=3, padx=5)
+    ttkb.Button(frame_filtri, text="Exportă Excel", command=esporta_storico,
+                bootstyle="info", padding=6).grid(row=0, column=3, padx=6, pady=4)
     carica_dati()

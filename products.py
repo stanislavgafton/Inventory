@@ -3,6 +3,8 @@ import tkinter as tk
 import winsound
 from tkinter import messagebox
 
+import ttkbootstrap as ttkb
+
 import cart
 import state
 
@@ -112,21 +114,26 @@ def pulisci_campi():
 
 
 def popup_nuovo_prodotto(barcode):
-    popup = tk.Toplevel()
+    popup = ttkb.Toplevel()
     popup.title("Produs Nou")
-    popup.geometry("300x250")
+    popup.geometry("360x320")
 
-    tk.Label(popup, text="Denumire").pack()
-    entry_nome_popup = tk.Entry(popup)
-    entry_nome_popup.pack()
+    wrap = ttkb.Frame(popup, padding=20)
+    wrap.pack(fill="both", expand=True)
 
-    tk.Label(popup, text="Cantitate").pack()
-    entry_q_popup = tk.Entry(popup)
-    entry_q_popup.pack()
+    ttkb.Label(wrap, text="Produs Nou", font=("Segoe UI", 14, "bold")).pack(pady=(0, 12))
 
-    tk.Label(popup, text="Preț").pack()
-    entry_prezzo_popup = tk.Entry(popup)
-    entry_prezzo_popup.pack()
+    ttkb.Label(wrap, text="Denumire").pack(anchor="w")
+    entry_nome_popup = ttkb.Entry(wrap)
+    entry_nome_popup.pack(fill="x", pady=(2, 8))
+
+    ttkb.Label(wrap, text="Cantitate").pack(anchor="w")
+    entry_q_popup = ttkb.Entry(wrap)
+    entry_q_popup.pack(fill="x", pady=(2, 8))
+
+    ttkb.Label(wrap, text="Preț").pack(anchor="w")
+    entry_prezzo_popup = ttkb.Entry(wrap)
+    entry_prezzo_popup.pack(fill="x", pady=(2, 8))
 
     def salva(event=None):
         nome = entry_nome_popup.get()
@@ -149,26 +156,32 @@ def popup_nuovo_prodotto(barcode):
     entry_nome_popup.bind("<Return>", lambda e: entry_q_popup.focus_set())
     entry_q_popup.bind("<Return>", lambda e: entry_prezzo_popup.focus_set())
     entry_prezzo_popup.bind("<Return>", salva)
-    tk.Button(popup, text="OK", command=salva).pack(pady=10)
+    ttkb.Button(wrap, text="Salvează", command=salva, bootstyle="success",
+                padding=8).pack(pady=14, fill="x")
     popup.after(100, lambda: entry_nome_popup.focus_set())
 
 
 def preview_prodotto(prodotto):
     state.root.unbind("<Return>")
     state.root.unbind("<KP_Enter>")
-    popup = tk.Toplevel()
+    popup = ttkb.Toplevel()
     popup.title("Produs")
-    popup.geometry("450x350")
+    popup.geometry("480x440")
 
     idp, nome, quantita, prezzo, barcode = prodotto
 
-    tk.Label(popup, text=nome, font=("Arial", 14)).pack(pady=5)
-    tk.Label(popup, text=f"Disponibil: {quantita}").pack()
-    tk.Label(popup, text=f"Preț: {prezzo} lei").pack()
+    wrap = ttkb.Frame(popup, padding=20)
+    wrap.pack(fill="both", expand=True)
+
+    ttkb.Label(wrap, text=nome, font=("Segoe UI", 16, "bold")).pack(pady=(0, 8))
+    ttkb.Label(wrap, text=f"Disponibil: {quantita}",
+               font=("Segoe UI", 11)).pack()
+    ttkb.Label(wrap, text=f"Preț: {prezzo} lei",
+               font=("Segoe UI", 11), bootstyle="success").pack(pady=(0, 12))
 
     qty_var = tk.IntVar(value=1)
 
-    frame_qty = tk.Frame(popup)
+    frame_qty = ttkb.Frame(wrap)
     frame_qty.pack(pady=10)
 
     def meno():
@@ -178,12 +191,15 @@ def preview_prodotto(prodotto):
     def piu():
         qty_var.set(qty_var.get() + 1)
 
-    tk.Button(frame_qty, text="-", width=3, command=meno).pack(side=tk.LEFT)
+    ttkb.Button(frame_qty, text="−", width=3, command=meno,
+                bootstyle="outline-secondary").pack(side=tk.LEFT, padx=4)
 
-    entry_qty = tk.Entry(frame_qty, textvariable=qty_var, width=5, justify="center")
-    entry_qty.pack(side=tk.LEFT)
+    entry_qty = ttkb.Entry(frame_qty, textvariable=qty_var, width=6, justify="center",
+                           font=("Segoe UI", 12, "bold"))
+    entry_qty.pack(side=tk.LEFT, padx=4)
 
-    tk.Button(frame_qty, text="+", width=3, command=piu).pack(side=tk.LEFT)
+    ttkb.Button(frame_qty, text="+", width=3, command=piu,
+                bootstyle="outline-secondary").pack(side=tk.LEFT, padx=4)
 
     def aggiungi_carrello(event=None):
         q = qty_var.get()
@@ -251,9 +267,12 @@ def preview_prodotto(prodotto):
 
         riattiva_barcode()
 
-    tk.Button(popup, text="Adaugă în coș", command=aggiungi_carrello).pack(pady=20)
-    tk.Button(popup, text="Adaugă în inventar", command=aggiungi_stock).pack(pady=5)
-    tk.Button(popup, text="Elimină în inventar", command=rimuovi_stock).pack(pady=5)
+    ttkb.Button(wrap, text="Adaugă în coș", command=aggiungi_carrello,
+                bootstyle="success", padding=8).pack(pady=(16, 6), fill="x")
+    ttkb.Button(wrap, text="Adaugă în inventar", command=aggiungi_stock,
+                bootstyle="primary", padding=8).pack(pady=4, fill="x")
+    ttkb.Button(wrap, text="Elimină în inventar", command=rimuovi_stock,
+                bootstyle="danger-outline", padding=8).pack(pady=4, fill="x")
 
     def riattiva_barcode():
         state.root.bind("<Return>", cerca_barcode)

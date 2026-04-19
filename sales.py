@@ -34,5 +34,6 @@ def chiudi_scontrino():
     state.carrello.clear()
     products.aggiorna_tabella()
     cart.aggiorna_carrello_ui()
+    cart.aggiorna_totale()
 
     messagebox.showinfo("OK", f"Total: {totale:.2f} lei")

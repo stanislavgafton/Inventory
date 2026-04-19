@@ -1,4 +1,4 @@
-import tkinter as tk
+import ttkbootstrap as ttkb
 
 import state
 
@@ -30,60 +30,63 @@ class Carrello(list):
         return item
 
 
-def aggiungi_al_carrello(prodotto):
-    idp, nome, q, prezzo = prodotto
-    aggiorna_totale()
-
-
 def aggiorna_totale():
     totale = sum(prezzo * q for _, _, prezzo, q in state.carrello)
     state.totale_var.set(f"Total: {totale:.2f} lei")
 
 
 def aggiorna_carrello_ui():
-    for row in state.tree_carrello.get_children():
-        state.tree_carrello.delete(row)
+    container = state.cart_frame
+    for child in container.winfo_children():
+        child.destroy()
 
-    for item in state.carrello:
-        idp, nome, prezzo, q = item
-        totale = prezzo * q
-
-        state.tree_carrello.insert(
-            "",
-            tk.END,
-            values=(nome, q, f"{totale:.2f}", " +                           |                          - ")
-        )
-
-
-def click_carrello(event):
-    item = state.tree_carrello.identify_row(event.y)
-    col = state.tree_carrello.identify_column(event.x)
-
-    if not item:
+    if not state.carrello:
+        ttkb.Label(container, text="Coșul este gol",
+                   font=("Segoe UI", 11, "italic"),
+                   bootstyle="secondary").pack(pady=20)
         return
 
-    index = state.tree_carrello.index(item)
+    for idx, (idp, nome, prezzo, q) in enumerate(state.carrello):
+        _build_card(container, idx, nome, prezzo, q)
 
-    if col == "#4":
-        bbox = state.tree_carrello.bbox(item, column="#4")
 
-        if not bbox:
-            return
+def _build_card(parent, idx, nome, prezzo, q):
+    card = ttkb.Frame(parent, padding=10, bootstyle="light")
+    card.pack(fill="x", pady=4, padx=2)
 
-        x_click = event.x - bbox[0]
-        width = bbox[2]
+    # Left: product name + unit price
+    left = ttkb.Frame(card, bootstyle="light")
+    left.pack(side="left", fill="x", expand=True)
 
-        if x_click < width / 2:
-            modifica_qta(index, +1)
-        else:
-            modifica_qta(index, -1)
+    ttkb.Label(left, text=nome, font=("Segoe UI", 11, "bold"),
+               bootstyle="inverse-light").pack(anchor="w")
+    ttkb.Label(left, text=f"{prezzo:.2f} lei / buc",
+               font=("Segoe UI", 9), bootstyle="secondary").pack(anchor="w")
+
+    # Right: qty controls + line total + delete
+    right = ttkb.Frame(card, bootstyle="light")
+    right.pack(side="right")
+
+    ttkb.Button(right, text="−", width=2, bootstyle="outline-secondary",
+                command=lambda: modifica_qta(idx, -1)).pack(side="left", padx=2)
+
+    ttkb.Label(right, text=str(q), width=3, anchor="center",
+               font=("Segoe UI", 11, "bold")).pack(side="left", padx=4)
+
+    ttkb.Button(right, text="+", width=2, bootstyle="outline-secondary",
+                command=lambda: modifica_qta(idx, +1)).pack(side="left", padx=2)
+
+    ttkb.Label(right, text=f"{prezzo * q:.2f} lei",
+               font=("Segoe UI", 11, "bold"), bootstyle="success",
+               width=12, anchor="e").pack(side="left", padx=10)
+
+    ttkb.Button(right, text="🗑", width=2, bootstyle="danger-outline",
+                command=lambda: rimuovi(idx)).pack(side="left", padx=2)
 
 
 def modifica_qta(index, delta):
     idp, nome, prezzo, q = state.carrello[index]
-
     q += delta
-
     if q <= 0:
         state.carrello.pop(index)
     else:
@@ -93,21 +96,7 @@ def modifica_qta(index, delta):
     aggiorna_totale()
 
 
-def modifica_quantita(delta):
-    selezionato = state.tree_carrello.focus()
-    if not selezionato:
-        return
-
-    index = state.tree_carrello.index(selezionato)
-
-    idp, nome, prezzo, q = state.carrello[index]
-
-    q += delta
-
-    if q <= 0:
-        state.carrello.pop(index)
-    else:
-        state.carrello[index] = (idp, nome, prezzo, q)
-
+def rimuovi(index):
+    state.carrello.pop(index)
     aggiorna_carrello_ui()
     aggiorna_totale()

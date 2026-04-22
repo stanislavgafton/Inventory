@@ -1,3 +1,5 @@
+import tkinter as tk
+
 import matplotlib.pyplot as plt
 import ttkbootstrap as ttkb
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -81,12 +83,39 @@ def mostra_dashboard():
     win = ttkb.Toplevel()
     win.title("Dashboard")
     win.geometry("1300x950")
-    win.minsize(1100, 800)
+    win.minsize(760, 600)
     win.state("zoomed")
     win.configure(bg=CANVAS_BG)
 
-    wrap = ttkb.Frame(win, padding=16)
-    wrap.pack(fill="both", expand=True)
+    scroll_outer = ttkb.Frame(win)
+    scroll_outer.pack(fill="both", expand=True)
+
+    scroll_canvas = tk.Canvas(scroll_outer, highlightthickness=0, bg=CANVAS_BG)
+    scroll_vsb = ttkb.Scrollbar(scroll_outer, orient="vertical",
+                                command=scroll_canvas.yview, bootstyle="round")
+    scroll_canvas.configure(yscrollcommand=scroll_vsb.set)
+    scroll_vsb.pack(side="right", fill="y")
+    scroll_canvas.pack(side="left", fill="both", expand=True)
+
+    wrap = ttkb.Frame(scroll_canvas, padding=16)
+    wrap_window = scroll_canvas.create_window((0, 0), window=wrap, anchor="nw")
+
+    def _on_wrap_configure(_e=None):
+        scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all"))
+
+    def _on_canvas_configure(event):
+        scroll_canvas.itemconfigure(wrap_window, width=event.width)
+
+    wrap.bind("<Configure>", _on_wrap_configure)
+    scroll_canvas.bind("<Configure>", _on_canvas_configure)
+
+    def _on_mousewheel(event):
+        scroll_canvas.yview_scroll(int(-event.delta / 120), "units")
+
+    scroll_canvas.bind("<Enter>",
+                       lambda e: scroll_canvas.bind_all("<MouseWheel>", _on_mousewheel))
+    scroll_canvas.bind("<Leave>",
+                       lambda e: scroll_canvas.unbind_all("<MouseWheel>"))
 
     header = ttkb.Frame(wrap)
     header.pack(fill="x", pady=(0, 10))
@@ -107,8 +136,6 @@ def mostra_dashboard():
 
     kpi_row = ttkb.Frame(wrap)
     kpi_row.pack(fill="x", pady=(0, 12))
-    for i in range(6):
-        kpi_row.columnconfigure(i, weight=1, uniform="kpi")
 
     rev_today = ttkb.StringVar(value="0.00 lei")
     rev_week = ttkb.StringVar(value="0.00 lei")
@@ -117,22 +144,34 @@ def mostra_dashboard():
     n_sales = ttkb.StringVar(value="0")
     avg_basket = ttkb.StringVar(value="0.00 lei")
 
-    _kpi_card(kpi_row, "Venit azi", rev_today).grid(row=0, column=0, sticky="nsew", padx=4)
-    _kpi_card(kpi_row, "Venit săptămână", rev_week).grid(row=0, column=1, sticky="nsew", padx=4)
-    _kpi_card(kpi_row, "Venit lună", rev_month).grid(row=0, column=2, sticky="nsew", padx=4)
-    _kpi_card(kpi_row, "Venit total", rev_total).grid(row=0, column=3, sticky="nsew", padx=4)
-    _kpi_card(kpi_row, "Număr bonuri (perioadă)", n_sales).grid(row=0, column=4, sticky="nsew", padx=4)
-    _kpi_card(kpi_row, "Valoare medie bon (perioadă)", avg_basket).grid(row=0, column=5, sticky="nsew", padx=4)
+    kpi_defs = [
+        ("Venit azi", rev_today),
+        ("Venit săptămână", rev_week),
+        ("Venit lună", rev_month),
+        ("Venit total", rev_total),
+        ("Număr bonuri (perioadă)", n_sales),
+        ("Valoare medie bon (perioadă)", avg_basket),
+    ]
+    kpi_widgets = [_kpi_card(kpi_row, caption, var) for caption, var in kpi_defs]
 
     charts = ttkb.Frame(wrap)
     charts.pack(fill="both", expand=True)
-    for c in range(2):
-        charts.columnconfigure(c, weight=1, uniform="chart")
-    charts.rowconfigure(0, weight=1)
-    charts.rowconfigure(1, weight=1)
-    charts.rowconfigure(2, weight=1)
 
     chart_cells = {}
+    _chart_cols = [2]  # mutable so _cell_pos can read current layout
+
+    def _apply_chart_grid(cols):
+        for c in range(2):
+            charts.columnconfigure(c, weight=0, uniform="")
+        for r in range(6):
+            charts.rowconfigure(r, weight=0)
+        for c in range(cols):
+            charts.columnconfigure(c, weight=1, uniform="chart")
+        rows = 5 if cols == 1 else 3
+        for r in range(rows):
+            charts.rowconfigure(r, weight=1)
+
+    _apply_chart_grid(2)
 
     def _clear_cell(key):
         old = chart_cells.get(key)
@@ -144,6 +183,9 @@ def mostra_dashboard():
         return cell
 
     def _cell_pos(key):
+        if _chart_cols[0] == 1:
+            order = ["day", "month", "top_qty", "top_rev", "hour"]
+            return dict(row=order.index(key), column=0)
         return {
             "day": dict(row=0, column=0),
             "month": dict(row=0, column=1),
@@ -307,4 +349,43 @@ def mostra_dashboard():
         draw_hour_chart(period)
 
     combo.bind("<<ComboboxSelected>>", refresh_all)
+
+    _last_layout = [None]
+
+    def _layout_kpis(cols):
+        for w in kpi_widgets:
+            w.grid_forget()
+        for i in range(6):
+            kpi_row.columnconfigure(i, weight=0, uniform="")
+        for c in range(cols):
+            kpi_row.columnconfigure(c, weight=1, uniform="kpi")
+        for i, w in enumerate(kpi_widgets):
+            w.grid(row=i // cols, column=i % cols,
+                   sticky="nsew", padx=4, pady=4)
+
+    def _reflow(event):
+        if event.widget is not win:
+            return
+        w = win.winfo_width()
+        if w < 760:
+            key = "xs"
+            kpi_cols, chart_cols = 2, 1
+        elif w < 1080:
+            key = "sm"
+            kpi_cols, chart_cols = 3, 1
+        else:
+            key = "lg"
+            kpi_cols, chart_cols = 6, 2
+        if key == _last_layout[0]:
+            return
+        _last_layout[0] = key
+        _layout_kpis(kpi_cols)
+        if chart_cols != _chart_cols[0]:
+            _chart_cols[0] = chart_cols
+            _apply_chart_grid(chart_cols)
+            refresh_all()
+
+    win.bind("<Configure>", _reflow)
+
+    _layout_kpis(6)
     refresh_all()

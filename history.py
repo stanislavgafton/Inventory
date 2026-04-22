@@ -36,7 +36,7 @@ def mostra_storico():
     win = ttkb.Toplevel()
     win.title("Mișcări Istorice")
     win.geometry("1200x640")
-    win.minsize(1000, 520)
+    win.minsize(720, 440)
     win.configure(bg=CANVAS_BG)
 
     header = ttkb.Frame(win, padding=(16, 14, 16, 4))
@@ -67,11 +67,13 @@ def mostra_storico():
                   lightcolor=[("focus", border_violet), ("!focus", border_violet)],
                   darkcolor=[("focus", border_violet), ("!focus", border_violet)])
 
+    card.columnconfigure(0, weight=1)
+
     filters_left = ttkb.Frame(card, bootstyle="light")
-    filters_left.pack(side="left", anchor="w")
+    filters_left.grid(row=0, column=0, sticky="ew")
 
     actions_right = ttkb.Frame(card, bootstyle="light")
-    actions_right.pack(side="right", anchor="e")
+    actions_right.grid(row=0, column=1, sticky="e")
 
     # --- Filters ---
     col_produs = ttkb.Frame(filters_left, bootstyle="light")
@@ -117,7 +119,7 @@ def mostra_storico():
         tree_mov.heading(col, text=col)
 
     tree_mov.column("ID", width=60, anchor="center")
-    tree_mov.column("Denumire", width=360, anchor="w")
+    tree_mov.column("Denumire", width=360, anchor="w", stretch=True)
     tree_mov.column("Tip", anchor="center", width=130)
     tree_mov.column("Cantitate", anchor="center", width=110)
     tree_mov.column("Data", anchor="center", width=180)
@@ -259,5 +261,23 @@ def mostra_storico():
                    font=("Segoe UI", 9),
                    background=footer_bg,
                    foreground=MUTED_FG).pack(side="left", padx=(6, 0))
+
+    NARROW = 900
+    _last_narrow = [None]
+
+    def _reflow(event):
+        if event.widget is not win:
+            return
+        narrow = win.winfo_width() < NARROW
+        if narrow == _last_narrow[0]:
+            return
+        _last_narrow[0] = narrow
+        if narrow:
+            actions_right.grid_configure(row=1, column=0, sticky="w",
+                                         pady=(8, 0))
+        else:
+            actions_right.grid_configure(row=0, column=1, sticky="e", pady=0)
+
+    win.bind("<Configure>", _reflow)
 
     carica_dati()

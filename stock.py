@@ -27,7 +27,7 @@ def mostra_stock():
     _win = win
     win.title("Stock")
     win.geometry("1100x640")
-    win.minsize(900, 500)
+    win.minsize(700, 440)
     win.configure(bg=CANVAS_BG)
 
     # --- Header ---
@@ -46,8 +46,10 @@ def mostra_stock():
     card = ttkb.Frame(win, padding=14, bootstyle="light")
     card.pack(fill="x", padx=16, pady=(8, 8))
 
+    card.columnconfigure(0, weight=1)
+
     search_col = ttkb.Frame(card, bootstyle="light")
-    search_col.pack(side="left", anchor="w")
+    search_col.grid(row=0, column=0, sticky="ew")
     ttkb.Label(search_col, text="Caută produs",
                font=("Segoe UI", 9),
                background=LIGHT_BG,
@@ -64,7 +66,7 @@ def mostra_stock():
     state.entry_ricerca = entry_ricerca
 
     actions = ttkb.Frame(card, bootstyle="light")
-    actions.pack(side="right", anchor="e")
+    actions.grid(row=0, column=1, sticky="e")
     # Spacer to align buttons with entry (entry has caption above)
     ttkb.Frame(actions, bootstyle="light", height=14).pack(anchor="e")
     btn_row = ttkb.Frame(actions, bootstyle="light")
@@ -99,7 +101,7 @@ def mostra_stock():
     tree.heading("Barcode", text="Barcode")
 
     tree.column("ID", width=60, anchor="center")
-    tree.column("Denumire", width=360, anchor="w")
+    tree.column("Denumire", width=360, anchor="w", stretch=True)
     tree.column("Cantitate", anchor="center", width=110)
     tree.column("Preț", anchor="e", width=110)
     tree.column("Barcode", anchor="center", width=200)
@@ -142,6 +144,23 @@ def mostra_stock():
         win.destroy()
 
     win.protocol("WM_DELETE_WINDOW", _on_close)
+
+    NARROW = 820
+    _last_narrow = [None]
+
+    def _reflow(event):
+        if event.widget is not win:
+            return
+        narrow = win.winfo_width() < NARROW
+        if narrow == _last_narrow[0]:
+            return
+        _last_narrow[0] = narrow
+        if narrow:
+            actions.grid_configure(row=1, column=0, sticky="w", pady=(8, 0))
+        else:
+            actions.grid_configure(row=0, column=1, sticky="e", pady=0)
+
+    win.bind("<Configure>", _reflow)
 
     aggiorna_tabella()
     entry_ricerca.focus_set()

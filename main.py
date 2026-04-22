@@ -142,6 +142,33 @@ side_col = ttkb.Frame(body, width=340)
 side_col.pack(side="right", fill="y")
 side_col.pack_propagate(False)
 
+# Phone-only scroll pieces — built now, packed only in phone mode.
+side_scroll_canvas = tk.Canvas(side_col, highlightthickness=0, bg=CANVAS_BG)
+side_scroll_vsb = ttkb.Scrollbar(side_col, orient="vertical",
+                                 command=side_scroll_canvas.yview,
+                                 bootstyle="round")
+side_scroll_canvas.configure(yscrollcommand=side_scroll_vsb.set)
+side_scroll_inner = ttkb.Frame(side_scroll_canvas)
+side_scroll_window = side_scroll_canvas.create_window(
+    (0, 0), window=side_scroll_inner, anchor="nw")
+
+side_scroll_inner.bind(
+    "<Configure>",
+    lambda _e: side_scroll_canvas.configure(scrollregion=side_scroll_canvas.bbox("all")))
+side_scroll_canvas.bind(
+    "<Configure>",
+    lambda e: side_scroll_canvas.itemconfigure(side_scroll_window, width=e.width))
+
+
+def _side_wheel(event):
+    side_scroll_canvas.yview_scroll(int(-event.delta / 120), "units")
+
+
+side_scroll_canvas.bind(
+    "<Enter>", lambda e: side_scroll_canvas.bind_all("<MouseWheel>", _side_wheel))
+side_scroll_canvas.bind(
+    "<Leave>", lambda e: side_scroll_canvas.unbind_all("<MouseWheel>"))
+
 # Total card
 total_card = _card(side_col, padding=18)
 total_card.pack(fill="x", pady=(0, 12))
@@ -170,6 +197,68 @@ tool_buttons = [
 for text, cmd, style in tool_buttons:
     ttkb.Button(tools_card.inner, text=text, command=cmd,
                 bootstyle=style, padding=10).pack(fill="x", pady=4)
+
+NARROW = 820
+PHONE = 520
+_last_mode = [None]
+
+
+def _mount_cards_direct():
+    side_scroll_canvas.pack_forget()
+    side_scroll_vsb.pack_forget()
+    total_card.pack_forget()
+    tools_card.pack_forget()
+    total_card.pack(in_=side_col, fill="x", pady=(0, 12))
+    tools_card.pack(in_=side_col, fill="x")
+
+
+def _mount_cards_scroll():
+    total_card.pack_forget()
+    tools_card.pack_forget()
+    side_scroll_vsb.pack(side="right", fill="y")
+    side_scroll_canvas.pack(side="left", fill="both", expand=True)
+    total_card.pack(in_=side_scroll_inner, fill="x", pady=(0, 12))
+    tools_card.pack(in_=side_scroll_inner, fill="x")
+
+
+def _reflow(event):
+    if event.widget is not root:
+        return
+    w = root.winfo_width()
+    if w < PHONE:
+        mode = "phone"
+    elif w < NARROW:
+        mode = "tablet"
+    else:
+        mode = "desktop"
+    if mode == _last_mode[0]:
+        return
+    _last_mode[0] = mode
+
+    cart_col.pack_forget()
+    side_col.pack_forget()
+
+    if mode == "desktop":
+        _mount_cards_direct()
+        side_col.pack_propagate(False)
+        side_col.configure(width=340)
+        cart_col.pack(side="left", fill="both", expand=True, padx=(0, 16))
+        side_col.pack(side="right", fill="y")
+    elif mode == "tablet":
+        _mount_cards_direct()
+        side_col.configure(width=0)
+        side_col.pack_propagate(True)
+        cart_col.pack(side="top", fill="both", expand=True, pady=(0, 12))
+        side_col.pack(side="top", fill="x")
+    else:  # phone
+        _mount_cards_scroll()
+        side_col.configure(width=0)
+        side_col.pack_propagate(True)
+        cart_col.pack(side="top", fill="both", expand=True, pady=(0, 12))
+        side_col.pack(side="top", fill="both", expand=True)
+
+
+root.bind("<Configure>", _reflow)
 
 aggiorna_carrello_ui()
 entry_barcode.focus_set()

@@ -5,6 +5,7 @@ from ttkbootstrap.constants import LEFT, X
 
 import db
 import state
+from cart import aggiorna_carrello_ui
 from dashboard import mostra_dashboard
 from export import esporta_excel
 from history import mostra_storico
@@ -18,6 +19,7 @@ state.cursor = db.cursor
 root = ttkb.Window(themename="cosmo")
 root.title("GASTA")
 root.geometry("1600x900")
+root.state("zoomed")
 root.bind("<Return>", cerca_barcode)
 root.bind("<KP_Enter>", cerca_barcode)
 
@@ -78,6 +80,12 @@ ttkb.Label(root, textvariable=state.totale_var,
            font=("Segoe UI", 18, "bold")).pack(pady=8)
 state.totale_var.set("Total: 0.00 lei")
 
+# Primary action — directly under the cart
+frame_bon = ttkb.Frame(root, padding=(10, 0))
+frame_bon.pack(pady=(0, 6))
+ttkb.Button(frame_bon, text="Eliberează Bonul", command=chiudi_scontrino,
+            bootstyle="primary", width=28, padding=10).pack()
+
 # Hidden entries (preserved from original — some code paths touch them)
 ttkb.Label(frame_nome, text="Denumire").pack(side=LEFT)
 entry_nome = ttkb.Entry(frame_nome)
@@ -100,12 +108,10 @@ frame_bottoni.pack(pady=10)
 
 btn_opts = dict(width=20, padding=8)
 
-ttkb.Button(frame_bottoni, text="Eliberează Bonul", command=chiudi_scontrino,
-            bootstyle="primary", **btn_opts).grid(row=0, column=0, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Exportă Excel", command=esporta_excel,
-            bootstyle="secondary", **btn_opts).grid(row=0, column=1, padx=6, pady=6)
+            bootstyle="secondary", **btn_opts).grid(row=0, column=0, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Importă Excel", command=importa_excel,
-            bootstyle="secondary", **btn_opts).grid(row=0, column=2, padx=6, pady=6)
+            bootstyle="secondary", **btn_opts).grid(row=0, column=1, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Mișcări Istorice", command=mostra_storico,
             bootstyle="secondary", **btn_opts).grid(row=1, column=0, padx=6, pady=6)
 ttkb.Button(frame_bottoni, text="Dashboard", command=mostra_dashboard,
@@ -147,6 +153,7 @@ tree.bind("<ButtonRelease-1>", seleziona_prodotto)
 state.tree = tree
 
 aggiorna_tabella()
+aggiorna_carrello_ui()
 
 entry_barcode.focus_set()
 root.mainloop()

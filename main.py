@@ -70,13 +70,18 @@ ttkb.Label(bc_card.inner, text="Scanează",
            font=("Segoe UI", 10, "bold"),
            background=root.style.colors.light,
            foreground="#495057").pack(anchor="center")
-entry_barcode = tk.Entry(bc_card.inner,
-                         font=("Segoe UI", 16),
-                         relief="flat",
-                         bd=0,
-                         highlightthickness=1,
-                         highlightbackground="#ced4da",
-                         highlightcolor="#9954bb")
+_violet = "#9954bb"
+root.style.configure("Violet.TEntry",
+                     bordercolor=_violet, lightcolor=_violet,
+                     darkcolor=_violet, insertcolor=_violet,
+                     fieldbackground="white")
+root.style.map("Violet.TEntry",
+               bordercolor=[("focus", _violet), ("!focus", _violet)],
+               lightcolor=[("focus", _violet), ("!focus", _violet)],
+               darkcolor=[("focus", _violet), ("!focus", _violet)])
+entry_barcode = ttkb.Entry(bc_card.inner,
+                           font=("Segoe UI", 16),
+                           style="Violet.TEntry")
 entry_barcode.pack(fill="x", pady=(4, 0), ipady=4)
 state.entry_barcode = entry_barcode
 

@@ -53,6 +53,20 @@ def mostra_storico():
     card = ttkb.Frame(win, padding=14, bootstyle="light")
     card.pack(fill="x", padx=16, pady=(8, 8))
 
+    border_violet = "#c9a6dc"
+    style = ttkb.Style()
+    for _cls in ("TEntry", "TCombobox"):
+        _name = f"Violet.{_cls}"
+        style.configure(_name,
+                        bordercolor=border_violet,
+                        lightcolor=border_violet,
+                        darkcolor=border_violet,
+                        borderwidth=1)
+        style.map(_name,
+                  bordercolor=[("focus", border_violet), ("!focus", border_violet)],
+                  lightcolor=[("focus", border_violet), ("!focus", border_violet)],
+                  darkcolor=[("focus", border_violet), ("!focus", border_violet)])
+
     filters_left = ttkb.Frame(card, bootstyle="light")
     filters_left.pack(side="left", anchor="w")
 
@@ -63,7 +77,7 @@ def mostra_storico():
     col_produs = ttkb.Frame(filters_left, bootstyle="light")
     col_produs.pack(side="left", padx=(0, 14))
     _caption(col_produs, "Produs").pack(anchor="w")
-    entry_search = ttkb.Entry(col_produs, width=22)
+    entry_search = ttkb.Entry(col_produs, width=22, style="Violet.TEntry")
     entry_search.pack(anchor="w", pady=(2, 0))
 
     col_da = ttkb.Frame(filters_left, bootstyle="light")
@@ -87,7 +101,8 @@ def mostra_storico():
     _caption(col_tip, "Tip").pack(anchor="w")
     tip_var = tk.StringVar(value="Toate")
     combo_tip = ttkb.Combobox(col_tip, textvariable=tip_var,
-                              values=TIP_CHOICES, state="readonly", width=14)
+                              values=TIP_CHOICES, state="readonly", width=14,
+                              style="Violet.TCombobox")
     combo_tip.pack(anchor="w", pady=(2, 0))
 
     # --- Treeview (defined before buttons so handlers can close over it) ---

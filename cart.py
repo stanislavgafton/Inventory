@@ -40,10 +40,22 @@ def aggiorna_carrello_ui():
     for child in container.winfo_children():
         child.destroy()
 
+    empty = getattr(state, "cart_empty_label", None)
+    if empty is not None:
+        try:
+            empty.destroy()
+        except Exception:
+            pass
+        state.cart_empty_label = None
+
     if not state.carrello:
-        ttkb.Label(container, text="Coșul este gol",
-                   font=("Segoe UI", 11, "italic"),
-                   bootstyle="secondary").pack(pady=20)
+        overlay_parent = getattr(state, "cart_wrap", container)
+        lbl = ttkb.Label(overlay_parent, text="Coșul este gol",
+                         font=("Segoe UI", 14, "bold"),
+                         background="#ffffff",
+                         foreground="#495057")
+        lbl.place(relx=0.5, rely=0.5, anchor="center")
+        state.cart_empty_label = lbl
         return
 
     for idx, (idp, nome, prezzo, q) in enumerate(state.carrello):

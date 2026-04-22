@@ -8,8 +8,12 @@ import state
 CARD_BG = "#ffffff"
 SPINE = "#dee2e6"
 TEXT = "#495057"
-ACCENT = "#2780e3"
+ACCENT = "#9954bb"
 ACCENT_2 = "#17a2b8"
+CANVAS_BG = "#e9ecef"
+LIGHT_BG = "#f8f9fa"
+MUTED_FG = "#6c757d"
+INFO_FG = "#9954bb"
 
 PERIODS = [
     ("Azi", "today"),
@@ -58,10 +62,12 @@ def _kpi_card(parent, caption, value_var):
     card = ttkb.Frame(parent, padding=14, bootstyle="light")
     ttkb.Label(card, textvariable=value_var,
                font=("Segoe UI", 20, "bold"),
-               bootstyle="primary").pack(anchor="w")
+               background=LIGHT_BG,
+               foreground=INFO_FG).pack(anchor="w")
     ttkb.Label(card, text=caption,
                font=("Segoe UI", 10),
-               bootstyle="secondary").pack(anchor="w")
+               background=LIGHT_BG,
+               foreground=MUTED_FG).pack(anchor="w")
     return card
 
 
@@ -77,6 +83,7 @@ def mostra_dashboard():
     win.geometry("1300x950")
     win.minsize(1100, 800)
     win.state("zoomed")
+    win.configure(bg=CANVAS_BG)
 
     wrap = ttkb.Frame(win, padding=16)
     wrap.pack(fill="both", expand=True)
@@ -85,10 +92,13 @@ def mostra_dashboard():
     header.pack(fill="x", pady=(0, 10))
     ttkb.Label(header, text="Dashboard Magazin",
                font=("Segoe UI", 20, "bold"),
-               bootstyle="primary").pack(side="left")
+               background=CANVAS_BG,
+               foreground=INFO_FG).pack(side="left")
 
     ttkb.Label(header, text="Perioadă:",
-               font=("Segoe UI", 11)).pack(side="left", padx=(24, 6))
+               font=("Segoe UI", 11),
+               background=CANVAS_BG,
+               foreground=TEXT).pack(side="left", padx=(24, 6))
     period_var = ttkb.StringVar(value=PERIODS[2][0])
     combo = ttkb.Combobox(header, textvariable=period_var,
                           values=[p[0] for p in PERIODS],

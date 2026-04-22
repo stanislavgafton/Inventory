@@ -11,11 +11,15 @@ import state
 CARD_BG = "#ffffff"
 TEXT = "#495057"
 MUTED_BG = "#f8f9fa"
+CANVAS_BG = "#e9ecef"
+LIGHT_BG = "#f8f9fa"
+MUTED_FG = "#6c757d"
+INFO_FG = "#9954bb"
 
 TIP_COLORS = {
     "încarcare": ("#e6f4ea", "#1e7a3c"),
     "descărcare": ("#fdecea", "#b02a37"),
-    "vanzare": ("#eaf2fc", "#1c5fa0"),
+    "vanzare": ("#f3eaf7", "#6d2f88"),
 }
 
 TIP_CHOICES = ["Toate", "încarcare", "descărcare", "vanzare"]
@@ -24,7 +28,8 @@ TIP_CHOICES = ["Toate", "încarcare", "descărcare", "vanzare"]
 def _caption(parent, text):
     return ttkb.Label(parent, text=text,
                       font=("Segoe UI", 9),
-                      bootstyle="secondary")
+                      background=LIGHT_BG,
+                      foreground=MUTED_FG)
 
 
 def mostra_storico():
@@ -32,15 +37,18 @@ def mostra_storico():
     win.title("Mișcări Istorice")
     win.geometry("1200x640")
     win.minsize(1000, 520)
+    win.configure(bg=CANVAS_BG)
 
     header = ttkb.Frame(win, padding=(16, 14, 16, 4))
     header.pack(fill="x")
     ttkb.Label(header, text="Mișcări Istorice",
                font=("Segoe UI", 16, "bold"),
-               bootstyle="primary").pack(anchor="w")
+               background=CANVAS_BG,
+               foreground=INFO_FG).pack(anchor="w")
     ttkb.Label(header, text="Istoricul încărcărilor, descărcărilor și vânzărilor",
                font=("Segoe UI", 10),
-               bootstyle="secondary").pack(anchor="w")
+               background=CANVAS_BG,
+               foreground=MUTED_FG).pack(anchor="w")
 
     card = ttkb.Frame(win, padding=14, bootstyle="light")
     card.pack(fill="x", padx=16, pady=(8, 8))
@@ -62,7 +70,7 @@ def mostra_storico():
     col_da.pack(side="left", padx=(0, 14))
     _caption(col_da, "De pe").pack(anchor="w")
     date_da = ttkb.DateEntry(col_da, width=12, dateformat="%Y-%m-%d",
-                             bootstyle="primary")
+                             bootstyle="info")
     date_da.pack(anchor="w", pady=(2, 0))
     date_da.entry.delete(0, "end")
 
@@ -70,7 +78,7 @@ def mostra_storico():
     col_a.pack(side="left", padx=(0, 14))
     _caption(col_a, "Până pe").pack(anchor="w")
     date_a = ttkb.DateEntry(col_a, width=12, dateformat="%Y-%m-%d",
-                            bootstyle="primary")
+                            bootstyle="info")
     date_a.pack(anchor="w", pady=(2, 0))
     date_a.entry.delete(0, "end")
 
@@ -88,7 +96,7 @@ def mostra_storico():
 
     tree_mov = ttkb.Treeview(tree_frame,
                              columns=("ID", "Denumire", "Tip", "Cantitate", "Data"),
-                             show="headings", bootstyle="primary")
+                             show="headings", bootstyle="info")
 
     for col in ("ID", "Denumire", "Tip", "Cantitate", "Data"):
         tree_mov.heading(col, text=col)
@@ -110,7 +118,7 @@ def mostra_storico():
     # Legacy Italian tags still coloured for old rows
     tree_mov.tag_configure("carico", background="#e6f4ea", foreground="#1e7a3c")
     tree_mov.tag_configure("scarico", background="#fdecea", foreground="#b02a37")
-    tree_mov.tag_configure("vendita", background="#eaf2fc", foreground="#1c5fa0")
+    tree_mov.tag_configure("vendita", background="#f3eaf7", foreground="#6d2f88")
 
     count_var = tk.StringVar(value="0 mișcări")
 
@@ -186,12 +194,28 @@ def mostra_storico():
     btn_row = ttkb.Frame(actions_right, bootstyle="light")
     btn_row.pack(anchor="e", pady=(2, 0))
 
+    style = ttkb.Style()
+    style.configure("Violet.TButton",
+                    background=INFO_FG, foreground="white",
+                    bordercolor=INFO_FG, darkcolor=INFO_FG, lightcolor=INFO_FG,
+                    focuscolor=INFO_FG, focusthickness=0)
+    style.map("Violet.TButton",
+              background=[("active", "#7a3f96"), ("pressed", "#6d2f88"),
+                          ("focus", INFO_FG), ("!disabled", INFO_FG)],
+              bordercolor=[("active", "#7a3f96"), ("pressed", "#6d2f88"),
+                           ("focus", INFO_FG), ("!disabled", INFO_FG)],
+              darkcolor=[("active", "#7a3f96"), ("pressed", "#6d2f88"),
+                         ("!disabled", INFO_FG)],
+              lightcolor=[("active", "#7a3f96"), ("pressed", "#6d2f88"),
+                          ("!disabled", INFO_FG)],
+              foreground=[("active", "white"), ("pressed", "white")])
+
     ttkb.Button(btn_row, text="Filtrează", command=carica_dati,
-                bootstyle="primary", padding=8).pack(side="left", padx=4)
+                style="Violet.TButton", padding=8).pack(side="left", padx=4)
     ttkb.Button(btn_row, text="Resetează", command=reset_filtre,
-                bootstyle="secondary-outline", padding=8).pack(side="left", padx=4)
+                bootstyle="info-outline", padding=8).pack(side="left", padx=4)
     ttkb.Button(btn_row, text="Exportă Excel", command=esporta_storico,
-                bootstyle="success-outline", padding=8).pack(side="left", padx=4)
+                bootstyle="info-outline", padding=8).pack(side="left", padx=4)
 
     entry_search.bind("<Return>", lambda _e: carica_dati())
 
@@ -201,20 +225,24 @@ def mostra_storico():
 
     ttkb.Label(footer, textvariable=count_var,
                font=("Segoe UI", 10),
-               bootstyle="secondary").pack(side="left")
+               background=CANVAS_BG,
+               foreground=MUTED_FG).pack(side="left")
 
     legend = ttkb.Frame(footer)
     legend.pack(side="right")
+
+    footer_bg = ttkb.Style().lookup("TFrame", "background") or CANVAS_BG
 
     for tipo, (bg, fg) in TIP_COLORS.items():
         item = ttkb.Frame(legend)
         item.pack(side="left", padx=(10, 0))
         dot = tk.Canvas(item, width=14, height=14,
-                        highlightthickness=0, bd=0)
+                        highlightthickness=0, bd=0, bg=footer_bg)
         dot.create_oval(2, 2, 12, 12, fill=fg, outline=fg)
         dot.pack(side="left")
         ttkb.Label(item, text=tipo,
                    font=("Segoe UI", 9),
-                   bootstyle="secondary").pack(side="left", padx=(6, 0))
+                   background=footer_bg,
+                   foreground=MUTED_FG).pack(side="left", padx=(6, 0))
 
     carica_dati()

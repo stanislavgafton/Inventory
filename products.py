@@ -18,7 +18,20 @@ def _play(path):
     winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC)
 
 
+def _tree_alive():
+    tree = getattr(state, "tree", None)
+    if tree is None:
+        return False
+    try:
+        return bool(tree.winfo_exists())
+    except Exception:
+        return False
+
+
 def aggiorna_tabella():
+    if not _tree_alive():
+        return
+
     for row in state.tree.get_children():
         state.tree.delete(row)
 
@@ -35,6 +48,9 @@ def aggiorna_tabella():
 
 
 def seleziona_prodotto(event):
+    if not _tree_alive():
+        return
+
     selezionato = state.tree.focus()
     dati = state.tree.item(selezionato, "values")
 
@@ -53,6 +69,9 @@ def seleziona_prodotto(event):
 
 
 def elimina_prodotto():
+    if not _tree_alive():
+        return
+
     selezionato = state.tree.focus()
     dati = state.tree.item(selezionato, "values")
 
@@ -67,6 +86,9 @@ def elimina_prodotto():
 
 
 def cerca_prodotto():
+    if not _tree_alive() or getattr(state, "entry_ricerca", None) is None:
+        return
+
     parola = state.entry_ricerca.get()
 
     for row in state.tree.get_children():
@@ -95,6 +117,24 @@ def cerca_barcode(event=None):
     risultato = state.cursor.fetchone()
 
     if risultato:
+        idp, nome, quantita, prezzo, _barcode = risultato
+
+        for i, (ex_idp, ex_nome, ex_prezzo, ex_q) in enumerate(state.carrello):
+            if ex_idp == idp:
+                new_q = ex_q + 1
+                if new_q > quantita:
+                    _play(_BEEP_ERR)
+                    messagebox.showwarning("Stock insuficient",
+                                           f"Disponibil doar {quantita}")
+                else:
+                    state.carrello[i] = (ex_idp, ex_nome, ex_prezzo, new_q)
+                    _play(_BEEP_OK)
+                    cart.aggiorna_carrello_ui()
+                    cart.aggiorna_totale()
+                state.entry_barcode.delete(0, tk.END)
+                state.entry_barcode.focus_set()
+                return
+
         _play(_BEEP_OK)
         preview_prodotto(risultato)
     else:
@@ -165,7 +205,7 @@ def popup_nuovo_prodotto(barcode):
     entry_nome_popup.bind("<Return>", lambda e: entry_q_popup.focus_set())
     entry_q_popup.bind("<Return>", lambda e: entry_prezzo_popup.focus_set())
     entry_prezzo_popup.bind("<Return>", salva)
-    ttkb.Button(wrap, text="Salvează", command=salva, bootstyle="primary",
+    ttkb.Button(wrap, text="Salvează", command=salva, bootstyle="info",
                 padding=8).pack(pady=14, fill="x")
     popup.after(100, lambda: entry_nome_popup.focus_set())
 
@@ -277,7 +317,7 @@ def preview_prodotto(prodotto):
         riattiva_barcode()
 
     ttkb.Button(wrap, text="Adaugă în coș", command=aggiungi_carrello,
-                bootstyle="primary", padding=8).pack(pady=(16, 6), fill="x")
+                bootstyle="info", padding=8).pack(pady=(16, 6), fill="x")
     ttkb.Button(wrap, text="Adaugă în inventar", command=aggiungi_stock,
                 bootstyle="secondary", padding=8).pack(pady=4, fill="x")
     ttkb.Button(wrap, text="Elimină în inventar", command=rimuovi_stock,

@@ -8,6 +8,7 @@ entry_nome = None
 entry_quantita = None
 entry_prezzo = None
 entry_barcode = None
+entry_barcode_stock = None
 entry_ricerca = None
 carrello = None
 totale_var = None

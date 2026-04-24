@@ -5,12 +5,14 @@ from openpyxl import load_workbook
 
 import products
 import state
+from units import normalize_unit
 
 HEADER_ALIASES = {
     "nome": {"nome", "denumire", "name", "product", "produs"},
     "quantita": {"quantita", "cantitate", "quantity", "qty", "stoc"},
     "prezzo": {"prezzo", "pret", "preț", "price"},
     "barcode": {"barcode", "cod", "codice", "ean"},
+    "unit": {"unit", "um", "unitate", "unità"},
 }
 
 
@@ -71,6 +73,7 @@ def importa_excel():
             prezzo = float(_get(raw, cols, "prezzo"))
             barcode = _get(raw, cols, "barcode")
             barcode = str(barcode).strip() if barcode not in (None, "") else None
+            unit = normalize_unit(_get(raw, cols, "unit"))
         except (TypeError, ValueError):
             skipped += 1
             continue
@@ -90,23 +93,23 @@ def importa_excel():
         if existing:
             idp, stock = existing
             state.cursor.execute(
-                "UPDATE prodotti SET quantita = quantita + ?, nome = ?, prezzo = ? WHERE id = ?",
-                (quantita, nome, prezzo, idp),
+                "UPDATE prodotti SET quantita = quantita + ?, nome = ?, prezzo = ?, unit = ? WHERE id = ?",
+                (quantita, nome, prezzo, unit, idp),
             )
             state.cursor.execute(
-                "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data) VALUES (?, ?, ?, ?, ?)",
-                (idp, nome, "încarcare", quantita, now),
+                "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data, unit) VALUES (?, ?, ?, ?, ?, ?)",
+                (idp, nome, "încarcare", quantita, now, unit),
             )
             updated += 1
         else:
             state.cursor.execute(
-                "INSERT INTO prodotti (nome, quantita, prezzo, barcode) VALUES (?, ?, ?, ?)",
-                (nome, quantita, prezzo, barcode),
+                "INSERT INTO prodotti (nome, quantita, prezzo, barcode, unit) VALUES (?, ?, ?, ?, ?)",
+                (nome, quantita, prezzo, barcode, unit),
             )
             idp = state.cursor.lastrowid
             state.cursor.execute(
-                "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data) VALUES (?, ?, ?, ?, ?)",
-                (idp, nome, "încarcare", quantita, now),
+                "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data, unit) VALUES (?, ?, ?, ?, ?, ?)",
+                (idp, nome, "încarcare", quantita, now, unit),
             )
             added += 1
 

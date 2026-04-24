@@ -2,12 +2,24 @@ import datetime
 import os
 import tkinter as tk
 import winsound
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 
 import ttkbootstrap as ttkb
 
 import cart
 import state
+from units import (
+    UNIT_BUC,
+    UNIT_G,
+    UNITS,
+    format_qty,
+    format_unit_price,
+    normalize_unit,
+    price_label,
+    qty_label,
+    qty_step,
+    stock_thresholds,
+)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _BEEP_OK = os.path.join(_HERE, "beep_ok.wav")
@@ -28,6 +40,32 @@ def _tree_alive():
         return False
 
 
+def _row_display(row):
+    idp, nome, q, prezzo, bc, unit = row
+    unit = normalize_unit(unit)
+    return (idp, nome, format_qty(q, unit), format_unit_price(prezzo, unit), bc or "")
+
+
+def _stock_tag(q, unit):
+    low, med = stock_thresholds(unit)
+    if q < low:
+        return "basso"
+    if q <= med:
+        return "medio"
+    return ""
+
+
+def _fill_tree(rows):
+    for row in rows:
+        unit = normalize_unit(row[5])
+        tag = _stock_tag(row[2], unit)
+        values = _row_display(row)
+        if tag:
+            state.tree.insert("", tk.END, values=values, tags=(tag,))
+        else:
+            state.tree.insert("", tk.END, values=values)
+
+
 def aggiorna_tabella():
     if not _tree_alive():
         return
@@ -35,16 +73,10 @@ def aggiorna_tabella():
     for row in state.tree.get_children():
         state.tree.delete(row)
 
-    state.cursor.execute("SELECT * FROM prodotti")
-    for row in state.cursor.fetchall():
-        q = row[2]
-
-        if q < 5:
-            state.tree.insert("", tk.END, values=row, tags=("basso",))
-        elif q <= 20:
-            state.tree.insert("", tk.END, values=row, tags=("medio",))
-        else:
-            state.tree.insert("", tk.END, values=row)
+    state.cursor.execute(
+        "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti"
+    )
+    _fill_tree(state.cursor.fetchall())
 
 
 def seleziona_prodotto(event):
@@ -120,53 +152,80 @@ def cerca_prodotto():
         state.tree.delete(row)
 
     state.cursor.execute(
-        "SELECT * FROM prodotti WHERE nome LIKE ?",
+        "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti WHERE nome LIKE ?",
         ('%' + parola + '%',)
     )
+    _fill_tree(state.cursor.fetchall())
 
-    for row in state.cursor.fetchall():
-        q = row[2]
 
-        if q < 5:
-            state.tree.insert("", tk.END, values=row, tags=("basso",))
-        elif q <= 20:
-            state.tree.insert("", tk.END, values=row, tags=("medio",))
-        else:
-            state.tree.insert("", tk.END, values=row)
+def _prompt_grams(parent, nome):
+    return simpledialog.askinteger(
+        "Cantitate (g)",
+        f"Câte grame pentru \"{nome}\"?",
+        parent=parent,
+        minvalue=1,
+    )
 
 
 def cerca_barcode(event=None):
     codice = state.entry_barcode.get()
 
-    state.cursor.execute("SELECT * FROM prodotti WHERE barcode = ?", (codice,))
+    state.cursor.execute(
+        "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti WHERE barcode = ?",
+        (codice,),
+    )
     risultato = state.cursor.fetchone()
 
-    if risultato:
-        idp, nome, quantita, prezzo, _barcode = risultato
-
-        for i, (ex_idp, ex_nome, ex_prezzo, ex_q) in enumerate(state.carrello):
-            if ex_idp == idp:
-                new_q = ex_q + 1
-                if new_q > quantita:
-                    _play(_BEEP_ERR)
-                    messagebox.showwarning("Stock insuficient",
-                                           f"Disponibil doar {quantita}")
-                else:
-                    state.carrello[i] = (ex_idp, ex_nome, ex_prezzo, new_q)
-                    _play(_BEEP_OK)
-                    cart.aggiorna_carrello_ui()
-                    cart.aggiorna_totale()
-                state.entry_barcode.delete(0, tk.END)
-                state.entry_barcode.focus_set()
-                return
-
-        _play(_BEEP_OK)
-        preview_prodotto(risultato)
-    else:
+    if not risultato:
         _play(_BEEP_ERR)
-        risposta = messagebox.askyesno("Nou Produs", "Produs nu a fost găsit. Vreai să îl adaugi?")
-        if risposta:
-            popup_nuovo_prodotto(codice)
+        messagebox.showwarning("Produs inexistent", "Barcode necunoscut")
+        state.entry_barcode.delete(0, tk.END)
+        state.entry_barcode.focus_set()
+        return
+
+    idp, nome, quantita, prezzo, _bc, unit = risultato
+    unit = normalize_unit(unit)
+
+    if unit == UNIT_G:
+        grams = _prompt_grams(state.root, nome)
+        if not grams:
+            state.entry_barcode.delete(0, tk.END)
+            state.entry_barcode.focus_set()
+            return
+        add_qty = int(grams)
+    else:
+        add_qty = 1
+
+    for i, item in enumerate(state.carrello):
+        ex_idp, ex_nome, ex_prezzo, ex_q, ex_unit = item
+        if ex_idp == idp:
+            new_q = ex_q + add_qty
+            if new_q > quantita:
+                _play(_BEEP_ERR)
+                messagebox.showwarning(
+                    "Stock insuficient",
+                    f"Disponibil doar {format_qty(quantita, unit)}",
+                )
+            else:
+                state.carrello[i] = (ex_idp, ex_nome, ex_prezzo, new_q, ex_unit)
+                _play(_BEEP_OK)
+                cart.aggiorna_carrello_ui()
+                cart.aggiorna_totale()
+            state.entry_barcode.delete(0, tk.END)
+            state.entry_barcode.focus_set()
+            return
+
+    if quantita <= 0 or add_qty > quantita:
+        _play(_BEEP_ERR)
+        messagebox.showwarning(
+            "Stock insuficient",
+            f"Disponibil doar {format_qty(quantita, unit)}",
+        )
+    else:
+        state.carrello.append((idp, nome, prezzo, add_qty, unit))
+        _play(_BEEP_OK)
+        cart.aggiorna_carrello_ui()
+        cart.aggiorna_totale()
 
     state.entry_barcode.delete(0, tk.END)
     state.entry_barcode.focus_set()
@@ -190,7 +249,7 @@ def pulisci_campi():
 def popup_nuovo_prodotto(barcode):
     popup = ttkb.Toplevel()
     popup.title("Produs Nou")
-    popup.geometry("360x320")
+    popup.geometry("380x500")
 
     wrap = ttkb.Frame(popup, padding=20)
     wrap.pack(fill="both", expand=True)
@@ -201,26 +260,59 @@ def popup_nuovo_prodotto(barcode):
     entry_nome_popup = ttkb.Entry(wrap)
     entry_nome_popup.pack(fill="x", pady=(2, 8))
 
-    ttkb.Label(wrap, text="Cantitate").pack(anchor="w")
+    ttkb.Label(wrap, text="Unitate de măsură").pack(anchor="w")
+    unit_var = tk.StringVar(value=UNIT_BUC)
+    combo_unit = ttkb.Combobox(wrap, textvariable=unit_var,
+                               values=[UNIT_BUC, UNIT_G, "kg"], state="readonly")
+    combo_unit.pack(fill="x", pady=(2, 8))
+
+    def _qty_label_for(choice):
+        if choice == "kg":
+            return "Cantitate (kg)"
+        return qty_label(normalize_unit(choice))
+
+    lbl_q = ttkb.Label(wrap, text=_qty_label_for(UNIT_BUC))
+    lbl_q.pack(anchor="w")
     entry_q_popup = ttkb.Entry(wrap)
     entry_q_popup.pack(fill="x", pady=(2, 8))
 
-    ttkb.Label(wrap, text="Preț").pack(anchor="w")
+    lbl_p = ttkb.Label(wrap, text=price_label(UNIT_BUC))
+    lbl_p.pack(anchor="w")
     entry_prezzo_popup = ttkb.Entry(wrap)
     entry_prezzo_popup.pack(fill="x", pady=(2, 8))
 
+    def _on_unit_change(*_):
+        choice = unit_var.get()
+        lbl_q.configure(text=_qty_label_for(choice))
+        lbl_p.configure(text=price_label(normalize_unit(choice)))
+
+    unit_var.trace_add("write", _on_unit_change)
+
     def salva(event=None):
-        nome = entry_nome_popup.get()
-        quantita = entry_q_popup.get()
-        prezzo = entry_prezzo_popup.get()
+        nome = entry_nome_popup.get().strip()
+        quantita = entry_q_popup.get().strip()
+        prezzo = entry_prezzo_popup.get().strip()
+        choice = unit_var.get()
+        unit = normalize_unit(choice)
 
         if not nome or not quantita or not prezzo:
-            messagebox.showwarning("Erroare", "Completează toate datele!")
+            messagebox.showwarning("Erroare", "Completează toate datele!", parent=popup)
+            return
+
+        try:
+            q_val = float(quantita)
+            if choice == "kg":
+                q_int = int(round(q_val * 1000))
+            else:
+                q_int = int(q_val)
+            prezzo_f = float(prezzo)
+        except ValueError:
+            messagebox.showwarning("Erroare", "Cantitate sau preț invalid", parent=popup)
             return
 
         state.cursor.execute(
-            "INSERT INTO prodotti (nome, quantita, prezzo, barcode) VALUES (?, ?, ?, ?)",
-            (nome, int(quantita), float(prezzo), barcode)
+            "INSERT INTO prodotti (nome, quantita, prezzo, barcode, unit) VALUES (?, ?, ?, ?, ?)",
+            (nome, q_int, prezzo_f, barcode, unit),
         )
         state.conn.commit()
 
@@ -235,67 +327,96 @@ def popup_nuovo_prodotto(barcode):
     popup.after(100, lambda: entry_nome_popup.focus_set())
 
 
-def preview_prodotto(prodotto):
-    state.root.unbind("<Return>")
-    state.root.unbind("<KP_Enter>")
+def cerca_barcode_stock(event=None):
+    entry = getattr(state, "entry_barcode_stock", None)
+    if entry is None:
+        return
+
+    codice = entry.get()
+
+    state.cursor.execute(
+        "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti WHERE barcode = ?",
+        (codice,),
+    )
+    risultato = state.cursor.fetchone()
+
+    if risultato:
+        _play(_BEEP_OK)
+        preview_stock_prodotto(risultato)
+    else:
+        _play(_BEEP_ERR)
+        risposta = messagebox.askyesno("Nou Produs", "Produs nu a fost găsit. Vreai să îl adaugi?")
+        if risposta:
+            popup_nuovo_prodotto(codice)
+
+    entry.delete(0, tk.END)
+    entry.focus_set()
+
+
+def preview_stock_prodotto(prodotto):
     popup = ttkb.Toplevel()
-    popup.title("Produs")
+    popup.title("Stock produs")
     popup.geometry("480x440")
 
-    idp, nome, quantita, prezzo, barcode = prodotto
+    idp, nome, quantita, prezzo, barcode, unit = prodotto
+    unit = normalize_unit(unit)
+    step = qty_step(unit)
 
     wrap = ttkb.Frame(popup, padding=20)
     wrap.pack(fill="both", expand=True)
 
     ttkb.Label(wrap, text=nome, font=("Segoe UI", 16, "bold")).pack(pady=(0, 8))
-    ttkb.Label(wrap, text=f"Disponibil: {quantita}",
+    ttkb.Label(wrap, text=f"Disponibil: {format_qty(quantita, unit)}",
                font=("Segoe UI", 11)).pack()
-    ttkb.Label(wrap, text=f"Preț: {prezzo} lei",
+    ttkb.Label(wrap, text=f"Preț: {format_unit_price(prezzo, unit)}",
                font=("Segoe UI", 11)).pack(pady=(0, 12))
 
-    qty_var = tk.IntVar(value=1)
+    qty_var = tk.IntVar(value=step)
+
+    ttkb.Label(wrap, text=qty_label(unit),
+               font=("Segoe UI", 9)).pack(anchor="center")
 
     frame_qty = ttkb.Frame(wrap)
-    frame_qty.pack(pady=10)
+    frame_qty.pack(pady=6)
 
     def meno():
-        if qty_var.get() > 1:
-            qty_var.set(qty_var.get() - 1)
+        v = qty_var.get() - step
+        if v >= step:
+            qty_var.set(v)
 
     def piu():
-        qty_var.set(qty_var.get() + 1)
+        qty_var.set(qty_var.get() + step)
 
     ttkb.Button(frame_qty, text="−", width=3, command=meno,
                 bootstyle="secondary").pack(side=tk.LEFT, padx=4)
 
-    entry_qty = ttkb.Entry(frame_qty, textvariable=qty_var, width=6, justify="center",
+    entry_qty = ttkb.Entry(frame_qty, textvariable=qty_var, width=8, justify="center",
                            font=("Segoe UI", 12, "bold"))
     entry_qty.pack(side=tk.LEFT, padx=4)
 
     ttkb.Button(frame_qty, text="+", width=3, command=piu,
                 bootstyle="secondary").pack(side=tk.LEFT, padx=4)
 
-    def aggiungi_carrello(event=None):
-        q = qty_var.get()
+    def chiudi():
+        popup.destroy()
+        entry = getattr(state, "entry_barcode_stock", None)
+        if entry is not None:
+            try:
+                entry.focus_set()
+            except Exception:
+                pass
 
-        if q <= 0:
-            messagebox.showwarning("Erroare", "Cantitate greșită")
-            return
-
-        if q > quantita:
-            messagebox.showwarning("Stock insuficient", f"Disponibil doar {quantita}")
-            return
-
-        state.carrello.append((idp, nome, prezzo, q))
-        cart.aggiorna_carrello_ui()
-        cart.aggiorna_totale()
-        riattiva_barcode()
+    def _read_qty():
+        try:
+            return int(qty_var.get())
+        except Exception:
+            return 0
 
     def aggiungi_stock():
-        q = qty_var.get()
+        q = _read_qty()
 
         if q <= 0:
-            messagebox.showwarning("Erroare", "Cantitate greșită")
+            messagebox.showwarning("Erroare", "Cantitate greșită", parent=popup)
             return
 
         state.cursor.execute(
@@ -303,26 +424,24 @@ def preview_prodotto(prodotto):
             (q, idp)
         )
         state.cursor.execute(
-            "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data) VALUES (?, ?, ?, ?, ?)",
-            (idp, nome, "încarcare", q, str(datetime.datetime.now()))
+            "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data, unit) VALUES (?, ?, ?, ?, ?, ?)",
+            (idp, nome, "încarcare", q, str(datetime.datetime.now()), unit)
         )
         state.conn.commit()
 
         aggiorna_tabella()
-
-        messagebox.showinfo("OK", f"Adăugate {q} la {nome}")
-
-        riattiva_barcode()
+        messagebox.showinfo("OK", f"Adăugate {format_qty(q, unit)} la {nome}", parent=popup)
+        chiudi()
 
     def rimuovi_stock():
-        q = qty_var.get()
+        q = _read_qty()
 
         if q <= 0:
-            messagebox.showwarning("Erroare", "Cantitate greșită")
+            messagebox.showwarning("Erroare", "Cantitate greșită", parent=popup)
             return
 
         if q > quantita:
-            messagebox.showwarning("Erroare", f"Disponibil doar {quantita}")
+            messagebox.showwarning("Erroare", f"Disponibil doar {format_qty(quantita, unit)}", parent=popup)
             return
 
         state.cursor.execute(
@@ -330,28 +449,19 @@ def preview_prodotto(prodotto):
             (q, idp)
         )
         state.cursor.execute(
-            "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data) VALUES (?, ?, ?, ?, ?)",
-            (idp, nome, "descărcare", q, str(datetime.datetime.now()))
+            "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data, unit) VALUES (?, ?, ?, ?, ?, ?)",
+            (idp, nome, "descărcare", q, str(datetime.datetime.now()), unit)
         )
         state.conn.commit()
 
         aggiorna_tabella()
+        messagebox.showinfo("OK", f"Eliminate {format_qty(q, unit)} din {nome}", parent=popup)
+        chiudi()
 
-        messagebox.showinfo("OK", f"Eliminate {q} {nome}")
-
-        riattiva_barcode()
-
-    ttkb.Button(wrap, text="Adaugă în coș", command=aggiungi_carrello,
+    ttkb.Button(wrap, text="Adaugă în stoc", command=aggiungi_stock,
                 bootstyle="info", padding=8).pack(pady=(16, 6), fill="x")
-    ttkb.Button(wrap, text="Adaugă în inventar", command=aggiungi_stock,
-                bootstyle="secondary", padding=8).pack(pady=4, fill="x")
-    ttkb.Button(wrap, text="Elimină în inventar", command=rimuovi_stock,
+    ttkb.Button(wrap, text="Elimină din stoc", command=rimuovi_stock,
                 bootstyle="danger", padding=8).pack(pady=4, fill="x")
 
-    def riattiva_barcode():
-        state.root.bind("<Return>", cerca_barcode)
-        state.root.bind("<KP_Enter>", cerca_barcode)
-        popup.destroy()
-
-    popup.protocol("WM_DELETE_WINDOW", riattiva_barcode)
+    popup.protocol("WM_DELETE_WINDOW", chiudi)
     popup.after(100, lambda: entry_qty.focus_set())

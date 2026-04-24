@@ -6,6 +6,7 @@ import ttkbootstrap as ttkb
 from openpyxl import Workbook
 
 import state
+from units import format_qty, normalize_unit
 
 
 CARD_BG = "#ffffff"
@@ -143,7 +144,7 @@ def mostra_storico():
         for row in tree_mov.get_children():
             tree_mov.delete(row)
 
-        query = "SELECT id_prodotto, nome, tipo, quantita, data FROM movimenti WHERE 1=1"
+        query = "SELECT id_prodotto, nome, tipo, quantita, data, unit FROM movimenti WHERE 1=1"
         params = []
 
         if entry_search.get():
@@ -171,10 +172,13 @@ def mostra_storico():
 
         n = 0
         for i, row in enumerate(state.cursor.fetchall()):
-            tags = [row[2]]
+            idp, nome, tipo, q, data, unit = row
+            unit = normalize_unit(unit)
+            tags = [tipo]
             if i % 2 == 1:
                 tags.append("odd")
-            tree_mov.insert("", tk.END, values=row, tags=tuple(tags))
+            display = (idp, nome, tipo, format_qty(q, unit), data)
+            tree_mov.insert("", tk.END, values=display, tags=tuple(tags))
             n += 1
 
         count_var.set(f"{n} mișcări")

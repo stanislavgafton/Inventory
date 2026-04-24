@@ -6,9 +6,7 @@ import db
 import state
 from cart import aggiorna_carrello_ui
 from dashboard import mostra_dashboard
-from export import esporta_excel
 from history import mostra_storico
-from import_products import importa_excel
 from products import cerca_barcode
 from sales import chiudi_scontrino
 from stock import mostra_stock
@@ -191,8 +189,6 @@ tool_buttons = [
     ("Stock",           mostra_stock,     "info-outline"),
     ("Dashboard",       mostra_dashboard, "info-outline"),
     ("Mișcări Istorice", mostra_storico,  "info-outline"),
-    ("Importă Excel",   importa_excel,    "info-outline"),
-    ("Exportă Excel",   esporta_excel,    "info-outline"),
 ]
 for text, cmd, style in tool_buttons:
     ttkb.Button(tools_card.inner, text=text, command=cmd,

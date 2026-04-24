@@ -3,7 +3,16 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 
 import state
-from products import aggiorna_tabella, cerca_prodotto, elimina_prodotto, seleziona_prodotto
+from export import esporta_excel
+from import_products import importa_excel
+from products import (
+    aggiorna_tabella,
+    cerca_barcode_stock,
+    cerca_prodotto,
+    elimina_prodotto,
+    preview_stock_prodotto,
+    seleziona_prodotto,
+)
 
 
 CANVAS_BG = "#e9ecef"
@@ -42,6 +51,31 @@ def mostra_stock():
                background=CANVAS_BG,
                foreground=MUTED_FG).pack(anchor="w")
 
+    style = ttkb.Style()
+    style.configure("Violet.TEntry",
+                    bordercolor=INFO_FG, lightcolor=INFO_FG, darkcolor=INFO_FG)
+    style.map("Violet.TEntry",
+              bordercolor=[("focus", INFO_FG), ("!focus", INFO_FG)],
+              lightcolor=[("focus", INFO_FG), ("!focus", INFO_FG)],
+              darkcolor=[("focus", INFO_FG), ("!focus", INFO_FG)])
+
+    # --- Barcode card ---
+    bc_card = ttkb.Frame(win, padding=14, bootstyle="light")
+    bc_card.pack(fill="x", padx=16, pady=(8, 0))
+
+    ttkb.Label(bc_card, text="Scanează barcode",
+               font=("Segoe UI", 9),
+               background=LIGHT_BG,
+               foreground=MUTED_FG).pack(anchor="w")
+    entry_barcode_stock = ttkb.Entry(bc_card,
+                                     font=("Segoe UI", 16),
+                                     style="Violet.TEntry")
+    entry_barcode_stock.pack(fill="x", pady=(4, 0), ipady=4)
+    state.entry_barcode_stock = entry_barcode_stock
+
+    entry_barcode_stock.bind("<Return>", cerca_barcode_stock)
+    entry_barcode_stock.bind("<KP_Enter>", cerca_barcode_stock)
+
     # --- Search card ---
     card = ttkb.Frame(win, padding=14, bootstyle="light")
     card.pack(fill="x", padx=16, pady=(8, 8))
@@ -54,16 +88,24 @@ def mostra_stock():
                font=("Segoe UI", 9),
                background=LIGHT_BG,
                foreground=MUTED_FG).pack(anchor="w")
-    style = ttkb.Style()
-    style.configure("Violet.TEntry",
-                    bordercolor=INFO_FG, lightcolor=INFO_FG, darkcolor=INFO_FG)
-    style.map("Violet.TEntry",
-              bordercolor=[("focus", INFO_FG), ("!focus", INFO_FG)],
-              lightcolor=[("focus", INFO_FG), ("!focus", INFO_FG)],
-              darkcolor=[("focus", INFO_FG), ("!focus", INFO_FG)])
-    entry_ricerca = ttkb.Entry(search_col, width=40, style="Violet.TEntry")
-    entry_ricerca.pack(anchor="w", pady=(2, 0))
+
+    search_row = ttkb.Frame(search_col, bootstyle="light")
+    search_row.pack(anchor="w", fill="x", pady=(2, 0))
+
+    entry_ricerca = ttkb.Entry(search_row, width=40, style="Violet.TEntry")
+    entry_ricerca.pack(side="left")
     state.entry_ricerca = entry_ricerca
+
+    def _reset_search():
+        entry_ricerca.delete(0, "end")
+        aggiorna_tabella()
+
+    ttkb.Button(search_row, text="Caută", command=cerca_prodotto,
+                bootstyle="info", padding=8).pack(side="left", padx=(8, 4))
+    ttkb.Button(search_row, text="Resetează", command=_reset_search,
+                bootstyle="secondary-outline", padding=8).pack(side="left", padx=4)
+    ttkb.Button(search_row, text="Elimină", command=elimina_prodotto,
+                bootstyle="danger", padding=8).pack(side="left", padx=4)
 
     actions = ttkb.Frame(card, bootstyle="light")
     actions.grid(row=0, column=1, sticky="e")
@@ -72,16 +114,10 @@ def mostra_stock():
     btn_row = ttkb.Frame(actions, bootstyle="light")
     btn_row.pack(anchor="e", pady=(2, 0))
 
-    def _reset_search():
-        entry_ricerca.delete(0, "end")
-        aggiorna_tabella()
-
-    ttkb.Button(btn_row, text="Caută", command=cerca_prodotto,
-                bootstyle="info", padding=8).pack(side="left", padx=4)
-    ttkb.Button(btn_row, text="Resetează", command=_reset_search,
-                bootstyle="secondary-outline", padding=8).pack(side="left", padx=4)
-    ttkb.Button(btn_row, text="Elimină", command=elimina_prodotto,
-                bootstyle="danger", padding=8).pack(side="left", padx=4)
+    ttkb.Button(btn_row, text="Importă Excel", command=importa_excel,
+                bootstyle="info-outline", padding=8).pack(side="left", padx=4)
+    ttkb.Button(btn_row, text="Exportă Excel", command=esporta_excel,
+                bootstyle="info-outline", padding=8).pack(side="left", padx=4)
 
     entry_ricerca.bind("<Return>", lambda _e: cerca_prodotto())
 
@@ -105,7 +141,7 @@ def mostra_stock():
     tree.column("ID", width=60, anchor="center")
     tree.column("Denumire", width=360, anchor="w", stretch=True)
     tree.column("Cantitate", anchor="center", width=110)
-    tree.column("Preț", anchor="e", width=110)
+    tree.column("Preț", anchor="e", width=150)
     tree.column("Barcode", anchor="center", width=200)
 
     vsb = ttkb.Scrollbar(tree_frame, orient="vertical",
@@ -115,6 +151,27 @@ def mostra_stock():
     vsb.pack(side="right", fill="y")
 
     tree.bind("<ButtonRelease-1>", seleziona_prodotto)
+
+    def _on_double_click(event):
+        item = tree.identify_row(event.y)
+        if not item:
+            return
+        values = tree.item(item, "values")
+        if not values:
+            return
+        try:
+            idp = int(values[0])
+        except (TypeError, ValueError):
+            return
+        state.cursor.execute(
+            "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti WHERE id = ?",
+            (idp,),
+        )
+        row = state.cursor.fetchone()
+        if row:
+            preview_stock_prodotto(row)
+
+    tree.bind("<Double-1>", _on_double_click)
     state.tree = tree
 
     # --- Footer: stock legend ---
@@ -142,6 +199,7 @@ def mostra_stock():
         global _win
         state.tree = None
         state.entry_ricerca = None
+        state.entry_barcode_stock = None
         _win = None
         win.destroy()
 
@@ -165,4 +223,4 @@ def mostra_stock():
     win.bind("<Configure>", _reflow)
 
     aggiorna_tabella()
-    entry_ricerca.focus_set()
+    entry_barcode_stock.focus_set()

@@ -19,9 +19,11 @@ def esporta_excel():
     ws = wb.active
     ws.title = "Inventar"
 
-    ws.append(["ID", "Denumire", "Cantitate", "Preț", "Barcode"])
+    ws.append(["ID", "Denumire", "Cantitate", "Preț", "Barcode", "UM"])
 
-    state.cursor.execute("SELECT * FROM prodotti")
+    state.cursor.execute(
+        "SELECT id, nome, quantita, prezzo, barcode, unit FROM prodotti"
+    )
     for row in state.cursor.fetchall():
         ws.append(row)
 

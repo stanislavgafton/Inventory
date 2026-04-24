@@ -263,11 +263,13 @@ def mostra_dashboard():
         cell = _clear_cell("top_qty")
         w = _where_movimenti(period)
         state.cursor.execute(f"""
-            SELECT m.nome, SUM(m.quantita)
+            SELECT m.nome, m.unit,
+                   SUM(CASE WHEN m.unit='g' THEN m.quantita/1000.0
+                            ELSE m.quantita END) AS qty
             FROM movimenti m
             WHERE 1=1 {w}
-            GROUP BY m.nome
-            ORDER BY SUM(m.quantita) DESC
+            GROUP BY m.nome, m.unit
+            ORDER BY qty DESC
             LIMIT 5
         """)
         rows = state.cursor.fetchall()
@@ -275,8 +277,10 @@ def mostra_dashboard():
         ax = fig.add_subplot(111, facecolor=CARD_BG)
         _style_ax(ax)
         if rows:
-            ax.bar([r[0] for r in rows], [r[1] for r in rows], color=ACCENT)
-            ax.set_title("Top 5 produse (cantitate)")
+            labels = [f"{r[0]} ({'kg' if r[1] == 'g' else 'buc'})" for r in rows]
+            values = [r[2] for r in rows]
+            ax.bar(labels, values, color=ACCENT)
+            ax.set_title("Top 5 produse (cantitate, buc / kg)")
             ax.tick_params(axis="x", rotation=30, colors=TEXT)
             ax.grid(True, axis="y", alpha=0.2, color=TEXT)
         else:
@@ -287,7 +291,9 @@ def mostra_dashboard():
         cell = _clear_cell("top_rev")
         w = _where_movimenti(period)
         state.cursor.execute(f"""
-            SELECT m.nome, SUM(m.quantita * p.prezzo) AS rev
+            SELECT m.nome,
+                   SUM(CASE WHEN m.unit='g' THEN m.quantita * p.prezzo / 1000.0
+                            ELSE m.quantita * p.prezzo END) AS rev
             FROM movimenti m
             JOIN prodotti p ON p.id = m.id_prodotto
             WHERE 1=1 {w}

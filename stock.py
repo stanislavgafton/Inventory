@@ -13,6 +13,15 @@ from products import (
     preview_stock_prodotto,
     seleziona_prodotto,
 )
+from units import UNIT_BUC, UNIT_G, stock_thresholds
+
+
+def _fmt_g(q):
+    if q >= 1000:
+        kg = q / 1000.0
+        s = f"{kg:.3f}".rstrip("0").rstrip(".")
+        return f"{s} kg"
+    return f"{q} g"
 
 
 CANVAS_BG = "#e9ecef"
@@ -178,10 +187,12 @@ def mostra_stock():
     footer = ttkb.Frame(win, padding=(16, 4, 16, 12))
     footer.pack(fill="x")
 
+    low_b, med_b = stock_thresholds(UNIT_BUC)
+    low_g, med_g = stock_thresholds(UNIT_G)
     legend_items = [
-        ("stoc scăzut (<5)", "#b02a37"),
-        ("stoc mediu (5–20)", "#8a6d1a"),
-        ("stoc normal (>20)", "#1e7a3c"),
+        (f"stoc scăzut (<{low_b} buc / <{_fmt_g(low_g)})", "#b02a37"),
+        (f"stoc mediu ({low_b}–{med_b} buc / {_fmt_g(low_g)}–{_fmt_g(med_g)})", "#8a6d1a"),
+        (f"stoc normal (>{med_b} buc / >{_fmt_g(med_g)})", "#1e7a3c"),
     ]
     for text, color in legend_items:
         item = ttkb.Frame(footer)

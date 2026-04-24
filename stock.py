@@ -3,7 +3,7 @@ import tkinter as tk
 import ttkbootstrap as ttkb
 
 import state
-from products import aggiorna_tabella, cerca_prodotto, seleziona_prodotto
+from products import aggiorna_tabella, cerca_prodotto, elimina_prodotto, seleziona_prodotto
 
 
 CANVAS_BG = "#e9ecef"
@@ -80,6 +80,8 @@ def mostra_stock():
                 bootstyle="info", padding=8).pack(side="left", padx=4)
     ttkb.Button(btn_row, text="Resetează", command=_reset_search,
                 bootstyle="secondary-outline", padding=8).pack(side="left", padx=4)
+    ttkb.Button(btn_row, text="Elimină", command=elimina_prodotto,
+                bootstyle="danger", padding=8).pack(side="left", padx=4)
 
     entry_ricerca.bind("<Return>", lambda _e: cerca_prodotto())
 

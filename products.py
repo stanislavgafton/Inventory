@@ -79,10 +79,35 @@ def elimina_prodotto():
         return
 
     id_prodotto = dati[0]
+    nome = dati[1]
+
+    stock_win = state.tree.winfo_toplevel()
+
+    if not messagebox.askyesno(
+        "Confirmare",
+        f"Ești sigur că vrei să elimini \"{nome}\"?",
+        parent=stock_win
+    ):
+        stock_win.lift()
+        stock_win.focus_force()
+        return
+
+    if not messagebox.askyesno(
+        "Confirmare finală",
+        f"Această acțiune nu poate fi anulată.\nȘtergi definitiv \"{nome}\"?",
+        icon="warning",
+        parent=stock_win
+    ):
+        stock_win.lift()
+        stock_win.focus_force()
+        return
 
     state.cursor.execute("DELETE FROM prodotti WHERE id=?", (id_prodotto,))
     state.conn.commit()
     aggiorna_tabella()
+    messagebox.showinfo("OK", f"Produs \"{nome}\" eliminat", parent=stock_win)
+    stock_win.lift()
+    stock_win.focus_force()
 
 
 def cerca_prodotto():

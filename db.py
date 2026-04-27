@@ -1,6 +1,12 @@
+import os
 import sqlite3
 
-conn = sqlite3.connect("inventario.db")
+_APPDATA = os.environ.get("APPDATA") or os.path.expanduser("~")
+DATA_DIR = os.path.join(_APPDATA, "Magazin")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "inventario.db")
+
+conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
 cursor.execute("""

@@ -1,2 +1,6 @@
 __pycache__
 test_import.xlsx
+build/
+dist/
+output/
+*.db

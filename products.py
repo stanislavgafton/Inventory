@@ -1,5 +1,6 @@
 import datetime
 import os
+import sys
 import tkinter as tk
 import winsound
 from tkinter import messagebox, simpledialog
@@ -21,9 +22,13 @@ from units import (
     stock_thresholds,
 )
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-_BEEP_OK = os.path.join(_HERE, "beep_ok.wav")
-_BEEP_ERR = os.path.join(_HERE, "beep_err.wav")
+def _resource_path(name):
+    base = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, name)
+
+
+_BEEP_OK = _resource_path("beep_ok.wav")
+_BEEP_ERR = _resource_path("beep_err.wav")
 
 
 def _play(path):

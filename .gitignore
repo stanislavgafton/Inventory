@@ -4,3 +4,6 @@ build/
 dist/
 output/
 *.db
+.qa/
+.local-data/
+backups/

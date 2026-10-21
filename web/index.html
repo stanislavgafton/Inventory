@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ro">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#215a46"><title>Magazin · Zi de zi, mai simplu</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="login" class="login-shell" hidden>
+    <form id="login-form" class="login-card">
+      <div class="brand-mark">m<span>•</span></div><p class="eyebrow">BUN VENIT ÎN MAGAZIN</p>
+      <h1 id="login-title">O zi bună începe simplu.</h1>
+      <p id="login-help" class="muted">Introduceți parola magazinului pentru a începe.</p>
+      <label for="password">Parola magazinului</label><input id="password" type="password" required minlength="6" maxlength="128" autocomplete="current-password">
+      <button class="primary" type="submit" id="login-button">Intră în magazin →</button>
+      <p id="login-error" class="error" role="alert"></p>
+      <small>Stocul, vânzările și rapoartele. Toate într-un singur loc.</small>
+    </form>
+  </div>
+  <div id="app" class="app-shell" hidden>
+    <aside class="sidebar">
+      <a href="#casa" class="brand"><span class="brand-mark small">m<span>•</span></span><span>magazin<small>ASISTENTUL MAGAZINULUI TĂU</small></span></a>
+      <p class="nav-caption">SPAȚIUL TĂU DE LUCRU</p>
+      <nav aria-label="Navigare principală">
+        <button data-page="casa" class="nav-button active"><span aria-hidden="true">▦</span> Casă <small>Vinde simplu</small></button>
+        <button data-page="stoc" class="nav-button"><span aria-hidden="true">▤</span> Stoc <small>Produse și inventar</small></button>
+        <button data-page="rapoarte" class="nav-button"><span aria-hidden="true">▥</span> Rapoarte <small>Cum merge magazinul</small></button>
+      </nav>
+      <div class="sidebar-bottom"><div class="local-note"><span class="status-dot"></span><strong>În rețeaua magazinului</strong><p>Datele sunt păstrate pe PC.<br>Copie de siguranță zilnică.</p></div><a class="text-link" href="/api/backup">↓ Descarcă o copie de siguranță</a><button id="logout" class="quiet">Ieșire din cont</button></div>
+    </aside>
+    <main>
+      <header class="topbar"><span>MAGAZINUL MEU <span class="separator">/</span> <strong id="breadcrumb">Casă</strong></span><div class="topbar-right"><span id="today"></span><div class="tablet-tools"><a href="/api/backup" aria-label="Descarcă o copie de siguranță">↓ Backup</a><button class="text-button" id="tablet-logout">Ieșire</button></div></div></header>
+      <section id="casa" class="page">
+        <div class="page-heading"><div><p class="eyebrow">LA TEJGHEA</p><h1>O nouă vânzare</h1><p class="muted">Scanează un cod sau alege un produs de mai jos.</p></div><button class="secondary refresh">↻ Actualizează</button></div>
+        <div id="count-banner" class="notice" hidden>Inventariere în curs. Vânzările sunt oprite până la finalizare. <button data-page="stoc" class="text-button">Deschide inventarul →</button></div>
+        <div class="checkout-layout">
+          <div class="catalog">
+            <form id="scan-form" class="search-box"><span aria-hidden="true">⌕</span><input id="product-search" aria-label="Caută produs sau scanează codul" placeholder="Caută un produs sau scanează codul…" autocomplete="off"><button class="scan-button" type="submit">Adaugă ↵</button></form>
+            <div id="categories" class="chips" aria-label="Categorii"></div>
+            <div class="section-line"><h2>Produsele tale <span id="product-number" class="pill"></span></h2><span class="muted">Atinge pentru a adăuga</span></div>
+            <div id="product-grid" class="product-grid"></div>
+          </div>
+          <aside class="cart-panel"><div class="cart-heading"><div><p class="eyebrow">VÂNZAREA CURENTĂ</p><h2>Coș de cumpărături</h2></div><span id="cart-count" class="round-count">0</span></div>
+            <div id="cart-lines" class="cart-lines"></div>
+            <div class="cart-bottom"><button id="clear-cart" class="text-button">Golește coșul</button><div class="total-row"><span>Total de plată</span><strong id="cart-total">0,00 <small>lei</small></strong></div><button id="checkout" class="primary wide">Finalizează vânzarea →</button><p class="cart-hint">Stocul se actualizează la finalizarea vânzării.</p></div>
+          </aside>
+        </div>
+      </section>
+      <section id="stoc" class="page" hidden>
+        <div class="page-heading"><div><p class="eyebrow">TOTUL LA LOCUL LUI</p><h1>Stoc și inventar</h1><p class="muted">Adaugă produse, primește marfă și numără stocul.</p></div><button id="new-product" class="primary">+ Produs nou</button></div>
+        <div class="stock-toolbar"><input id="stock-search" placeholder="Caută după denumire sau cod…" aria-label="Caută în stoc"><a class="secondary" href="/api/export?kind=stock">↓ Exportă stocul</a><button id="start-count" class="secondary">Începe inventarierea</button></div>
+        <div id="count-panel" class="panel" hidden></div>
+        <div class="panel table-wrap"><table><thead><tr><th>Produs</th><th>Stoc disponibil</th><th>Preț vânzare</th><th>Cost achiziție</th><th>Acțiuni</th></tr></thead><tbody id="stock-rows"></tbody></table></div>
+        <p class="muted help-line">Produsele fără cod de bare se aleg după denumire la casă. Pentru produse vrac, cantitatea se introduce în grame, iar prețul și costul sunt pe kilogram. <a href="/api/export?kind=counts">Descarcă istoricul inventarelor →</a></p>
+      </section>
+      <section id="rapoarte" class="page" hidden>
+        <div class="page-heading"><div><p class="eyebrow">O PRIVIRE DE ANSAMBLU</p><h1>Cum merge magazinul?</h1><p class="muted">Vânzări și profit brut, ușor de înțeles.</p></div><a id="export-sales" class="secondary" href="#">↓ Exportă vânzările</a></div>
+        <form id="report-filter" class="report-filter panel"><button type="button" class="chip selected" data-period="today">Azi</button><button type="button" class="chip" data-period="month">Luna aceasta</button><button type="button" class="chip" data-period="year">Anul acesta</button><label>De la <input type="date" id="report-start" required></label><label>Până la <input type="date" id="report-end" required></label><button class="secondary" type="submit">Aplică</button></form>
+        <div id="report-content"></div>
+      </section>
+      <footer>magazin <span>Un lucru mai puțin de care să-ți faci griji.</span></footer>
+    </main>
+  </div>
+  <dialog id="product-dialog"><form id="product-form"><div class="dialog-heading"><div><p class="eyebrow">CATALOGUL TĂU</p><h2 id="product-title">Produs nou</h2></div><button type="button" class="close" data-close aria-label="Închide">×</button></div>
+    <label>Denumire produs<input name="name" required maxlength="150" placeholder="De exemplu: Pâine albă"></label>
+    <div class="form-row"><label>Categorie<input name="category" maxlength="80" placeholder="De exemplu: Panificație" list="category-options"><datalist id="category-options"></datalist></label><label>Cod de bare <small>opțional</small><input name="barcode" maxlength="100" placeholder="Scanează sau lasă gol"></label></div>
+    <label>Se vinde la<select name="unit"><option value="buc">Bucată</option><option value="g">Greutate (grame, preț pe kg)</option></select></label>
+    <div class="form-row"><label><span id="price-label">Preț vânzare (lei/buc)</span><input name="price" type="number" min="0" step="0.01" required inputmode="decimal"></label><label><span id="cost-label">Cost achiziție (lei/buc)</span><input name="cost" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Opțional, pentru profit"></label></div>
+    <div class="form-row"><label id="initial-stock-label">Stoc inițial <span class="quantity-unit">(buc)</span><input name="quantity" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label>Alertă stoc mic <span class="quantity-unit">(buc)</span><input name="low_stock" type="number" min="0" step="1" value="5" required inputmode="numeric"></label></div>
+    <p class="muted">Fără cost de achiziție, profitul acestui produs nu poate fi calculat. Costurile introduse se aplică vânzărilor viitoare.</p><p class="form-error error" role="alert"></p><button class="primary wide" type="submit">Salvează produsul</button>
+  </form></dialog>
+  <dialog id="quantity-dialog"><form id="quantity-form"><div class="dialog-heading"><h2 id="quantity-title"></h2><button type="button" class="close" data-close aria-label="Închide">×</button></div><p id="quantity-help" class="muted"></p><label id="quantity-label" for="quantity-value">Cantitate</label><input id="quantity-value" type="number" step="1" min="1" required inputmode="numeric"><p class="form-error error" role="alert"></p><button class="primary wide" type="submit" id="quantity-button">Adaugă</button></form></dialog>
+  <dialog id="confirm-dialog"><form id="confirm-form"><h2 id="confirm-title"></h2><p id="confirm-message" class="muted"></p><div class="dialog-actions"><button type="button" class="secondary" data-close>Înapoi</button><button class="primary" type="submit">Confirmă</button></div></form></dialog>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

@@ -1,36 +1,21 @@
-import datetime
+import sqlite3
 from tkinter import messagebox
 
 import cart
 import products
 import state
-from units import line_total
+from checkout import record_sale
 
 
 def chiudi_scontrino():
     if not state.carrello:
         messagebox.showwarning("Atenție", "Coșul e gol")
         return
-    totale = 0
-
-    for item in state.carrello:
-        idp, nome, prezzo, q, unit = item
-        totale += line_total(prezzo, q, unit)
-
-        state.cursor.execute(
-            "UPDATE prodotti SET quantita = quantita - ? WHERE id = ?",
-            (q, idp)
-        )
-
-        state.cursor.execute(
-            "INSERT INTO vendite (totale, data) VALUES (?, ?)",
-            (totale, str(datetime.datetime.now()))
-        )
-        state.cursor.execute(
-            "INSERT INTO movimenti (id_prodotto, nome, tipo, quantita, data, unit) VALUES (?, ?, ?, ?, ?, ?)",
-            (idp, nome, "vanzare", q, str(datetime.datetime.now()), unit)
-        )
-        state.conn.commit()
+    try:
+        totale = record_sale(state.conn, state.carrello)
+    except (ValueError, sqlite3.Error) as exc:
+        messagebox.showerror("Vânzare nesalvată", str(exc))
+        return
 
     state.carrello.clear()
     products.aggiorna_tabella()

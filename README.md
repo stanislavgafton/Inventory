@@ -1,5 +1,13 @@
 # Magazin
 
+## New: Romanian browser app for Windows PCs and tablets
+
+Open **Start Magazin.bat** to run the new local browser version. It includes product selection without barcodes, weighted sales, stock receiving, resumable annual inventory counts, gross-profit reports, CSV exports, password access, and automatic daily SQLite backups. No third-party runtime packages are required (Python 3.11+).
+
+Read **[WEB_GUIDE.md](WEB_GUIDE.md)** for setup, tablet access, existing-data migration, backups, reporting limitations, and executable packaging. The existing database is preserved; legacy sales are separated from new reports because the old checkout could inflate multi-product totals.
+
+The sections below describe the retained Tkinter desktop version.
+
 A small-shop point-of-sale and inventory app for Windows. Scan a barcode, build a cart, close the receipt, and keep stock & sales history in a local SQLite database.
 
 Built with Python + Tkinter ([ttkbootstrap](https://ttkbootstrap.readthedocs.io/) "cosmo" theme), `matplotlib` for the dashboard, and `openpyxl` for Excel import/export.
